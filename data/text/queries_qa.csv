@@ -1,0 +1,2 @@
+query_id,query,intent,entities_json,target_kb_id,query_type,expected_behaviour,split,notes
+qa001,an airport sign for baggage reclaim,find_baggage_reclaim,{},,vague,clarify,regression,typed in the interface on 16 Sep 2026 with the check-in suitcase pictogram; no terminal; two reclaim halls

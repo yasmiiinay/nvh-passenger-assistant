@@ -15,7 +15,9 @@ Rule order (first that applies wins):
                                                  as a disagreement, not merged
   R3  text is deictic, vague or not understood
       and the image is usable                 -> image leads; text narrows
-                                                 (terminal, candidates)
+                                                 (terminal, candidates). An
+                                                 uncertain image leads only when
+                                                 the text offers no candidates
   R4  text answered by alias or similarity
       and the image is strong                 -> same category: reinforced;
                                                  different: conflict
@@ -147,6 +149,12 @@ def text_is_open(result: RetrievalResult) -> bool:
     return result.decision == "abstain" and "grounded_negative" not in result.flags
 
 
+def text_has_candidates(result: RetrievalResult) -> bool:
+    """A clarify that already offers records is a question worth keeping; an
+    uncertain photo must not replace it with a broader one (QA pass 1)."""
+    return result.decision == "clarify" and bool(result.candidates)
+
+
 def narrow_by_text(record_ids: list[str], result: RetrievalResult | None, gaz) -> list[str]:
     """Keep the image's records that the text does not rule out: a terminal
     entity narrows to that terminal; clarify candidates narrow to the overlap."""
@@ -194,6 +202,8 @@ def _image_leads(out: Outcome, vision: VisionResult, text: RetrievalResult | Non
     if vision.band == "uncertain":
         out.decision = "clarify"
         out.flags.append("image_uncertain")
+        if vision.category_margin < ctx.vision_thresholds["vision_margin_delta"]:
+            out.flags.append("image_no_clear_leader")
         out.reason = f"image band uncertain: top categories {[c for c, _ in vision.category_ranking]}"
         return out
     if len(records) == 1:
@@ -269,7 +279,8 @@ def apply_rules(text: RetrievalResult | None, vision: VisionResult | None,
         return out
 
     # R3
-    if text is not None and text_is_open(text) and image_usable(vision):
+    if text is not None and text_is_open(text) and image_usable(vision) \
+            and (image_strong(vision) or not text_has_candidates(text)):
         image_cat = vision.category_ranking[0][0]
         cats = text_categories(text, gaz)
         if image_strong(vision) and cats and image_cat not in cats and text.decision == "clarify":
@@ -323,6 +334,8 @@ def apply_rules(text: RetrievalResult | None, vision: VisionResult | None,
     if vision is not None and image_usable(vision) and vision.band == "uncertain":
         out.image_category = vision.category_ranking[0][0]
         out.flags.append("image_uncertain")
+        if out.image_category in text_categories(text, gaz):
+            out.flags.append("image_uncertain_agrees")
     return out
 
 

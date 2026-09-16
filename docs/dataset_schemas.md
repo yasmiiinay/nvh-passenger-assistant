@@ -42,6 +42,9 @@ query_id, query, intent, entities_json (JSON object as string), target_kb_id
 sentences a speaker chose at recording time that are not in either text
 set (`s###` ids); they are declared there, with their expected outcome,
 before the clip is scored, and they are not used for text evaluation.
+`data/text/queries_qa.csv` (`qa###` ids, split `regression`) holds sentences
+typed into the interface during QA that exposed a defect; they feed the
+regression scenarios of the multimodal manifest only.
 
 ## 3. Audio dataset — data/audio/audio_manifest.csv
 
@@ -90,4 +93,4 @@ local data folder, not in any interaction log.
 | consistency_label | `consistent` \| `conflict` \| `single_modality` |
 | conflict_type | blank, or `identifier_mismatch` (photo B12 + text B21), `category_mismatch` (baggage photo + lounge question) |
 | query_type | controlled query type |
-| split | `dev` \| `heldout` |
+| split | `dev` \| `heldout` \| `regression` (multimodal manifest and `queries_qa.csv` only: cases written after a defect was seen in the interface, reported separately) |

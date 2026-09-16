@@ -128,9 +128,12 @@ def render(result: RetrievalResult, gaz) -> str:
     if result.decision == "clarify":
         if "deictic" in result.flags:
             lines.append("Please add a photo of the sign so I can identify it, or describe where you are.")
+        elif len(result.candidates) == 1:
+            lines.append(f"Do you mean {gaz.records[result.candidates[0]]['name']}? "
+                         "Please confirm, or say a bit more about what you are looking for.")
         elif result.candidates:
             names = [gaz.records[rid]["name"] for rid in result.candidates]
-            lines.append("Which of these do you mean? " + "; ".join(names) + ".")
+            lines.append("Which of these do you mean? " + " or ".join(names) + "?")
         else:
             lines.append("Could you say a bit more about what you are looking for?")
         lines.append(_provenance(None, result))
@@ -196,6 +199,9 @@ def _modality_notes(outcome, gaz) -> list[str]:
             lines.append(f"Note: the photo looks like a {_category_label(outcome.image_category, gaz)} sign, "
                          "which is not what your question refers to. I have answered the question; "
                          "if you meant the sign, please ask about it on its own.")
+        elif "image_uncertain_agrees" in outcome.flags:
+            lines.append(f"The photo most likely shows a {_category_label(outcome.image_category, gaz)} sign, "
+                         "which fits your question, so I went by your words.")
         elif "image_uncertain" in outcome.flags:
             lines.append("I could not identify the sign in the photo with any confidence, so I answered from your words.")
         elif "image_not_recognised" in outcome.flags:
@@ -218,8 +224,9 @@ def render_outcome(outcome, gaz) -> str:
             lines.append("Please type a question, add a photo of a sign, or record your question.")
         return "\n".join(lines)
     if outcome.route in ("text_leads", "voice_leads", "text_only", "voice_only") and outcome.decision != "conflict":
-        lines.append(render(outcome.text, gaz))
-        lines.extend(_modality_notes(outcome, gaz))
+        body = render(outcome.text, gaz).split("\n")
+        # notes about the other inputs go before the source line, which stays last
+        lines.extend(body[:-1] + _modality_notes(outcome, gaz) + body[-1:])
         return "\n".join(lines)
 
     if outcome.decision == "conflict":
@@ -246,10 +253,15 @@ def render_outcome(outcome, gaz) -> str:
 
     category = outcome.image_category
     if outcome.decision == "clarify":
-        if "image_uncertain" in outcome.flags:
-            options = ", ".join(_category_label(c, gaz) for c, _ in outcome.vision.category_ranking)
-            lines.append(f"I am not sure what this sign shows; it may be {options}. "
-                         "Could you say what you are looking for?")
+        if "image_no_clear_leader" in outcome.flags:
+            # runner-up within the vision margin: name both, never a third
+            first, second = (c for c, _ in outcome.vision.category_ranking[:2])
+            lines.append(f"I am not sure what this sign shows; it may be {_category_label(first, gaz)} or "
+                         f"{_category_label(second, gaz)}. Could you say what you are looking for, "
+                         "or take a closer photo?")
+        elif "image_uncertain" in outcome.flags:
+            lines.append(f"This most likely shows a {_category_label(category, gaz)} sign, but I am not certain. "
+                         "Is that what you are looking for?")
         elif "image_confirm" in outcome.flags:
             lines.append(f"This looks like a {_category_label(category, gaz)} sign. "
                          f"Is that what you are looking for? If so, the place is: {_names(outcome.candidates, gaz)}.")

@@ -4,6 +4,10 @@ Every scenario is routed through src.router.route with the real modality
 pipelines (typed text, image file, audio file). Expectations were written
 into the manifest before the first run and are not edited afterwards.
 
+The `regression` split holds scenarios written after a defect was seen in
+the interface (Chat 04 QA); they are not development or held-out evidence
+and are reported on their own.
+
 Writes to outputs/checkpoint_03_4/multimodal/<split>[_confirm]/:
   per_scenario.csv   expected vs observed route, decision, record, conflict,
                      verdict, single-modality outcomes, latency
@@ -43,7 +47,7 @@ def load_rows(path: Path) -> list[dict]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split", choices=["dev", "heldout", "all"], default="dev")
+    parser.add_argument("--split", choices=["dev", "heldout", "regression", "all"], default="dev")
     parser.add_argument("--confirm-image-only", action="store_true")
     args = parser.parse_args()
     out_dir = OUT_ROOT / (args.split + ("_confirm" if args.confirm_image_only else ""))
@@ -52,7 +56,8 @@ def main() -> int:
     scenarios = [r for r in load_rows(DATA / "multimodal" / "multimodal_manifest.csv")
                  if args.split in ("all", r["split"])]
     queries = {q["query_id"]: q["query"] for path in (SETTINGS.queries_seed_path, SETTINGS.queries_heldout_path,
-                                                      SETTINGS.queries_spoken_path) for q in load_queries(path)}
+                                                      SETTINGS.queries_spoken_path, SETTINGS.queries_qa_path)
+               for q in load_queries(path)}
     images = {r["image_id"]: r["file"] for r in load_rows(DATA / "images" / "images_manifest.csv")}
     audio = {r["audio_id"]: r["file"] for r in load_rows(DATA / "audio" / "audio_manifest.csv")
              + load_rows(DATA / "audio" / "derived_manifest.csv")}

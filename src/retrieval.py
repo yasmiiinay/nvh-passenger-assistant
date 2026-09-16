@@ -272,6 +272,18 @@ def decide(ranked: list[tuple[str, float]], tau_high: float, tau_low: float,
     return "clarify", top_score, margin
 
 
+def offered_candidates(ranked: list[tuple[str, float]], margin_delta: float) -> list[str]:
+    """What a clarify question offers: the leader, plus the runner-up only when
+    it lies within margin_delta of the leader. Never a third record; the full
+    ranking stays in `ranked` for the evidence panel. The whole top-3 used to
+    be offered, which put records well below the leader in front of the
+    passenger (QA pass 1)."""
+    offered = [ranked[0][0]]
+    if len(ranked) > 1 and ranked[0][1] - ranked[1][1] < margin_delta:
+        offered.append(ranked[1][0])
+    return offered
+
+
 def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex, thresholds: dict,
                      filter_mode: str = "intent", query_vec: np.ndarray | None = None) -> RetrievalResult:
     """Semantic stages for a query the deterministic stages left unresolved.
@@ -319,7 +331,7 @@ def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex,
     if decision == "clarify":
         return _decide(result, stage, "clarify",
                        f"score {score:.2f} or margin {margin:.2f} below threshold; offering top candidates",
-                       None, [rid for rid, _ in ranked[:3]])
+                       None, offered_candidates(ranked, thresholds["margin_delta"]))
     return _decide(result, stage, "abstain", f"best similarity {score:.2f} below abstain threshold", None,
                    [rid for rid, _ in ranked[:3]])
 

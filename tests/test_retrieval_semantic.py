@@ -15,7 +15,7 @@ from evaluation.retrieval_metrics import judge_outcome
 from src.entities import load_gazetteers
 from src.foundation_audit import load_queries
 from src import retrieval
-from src.retrieval import (STAGE_CATEGORY, STAGE_FULL_KB, candidate_records, decide,
+from src.retrieval import (STAGE_CATEGORY, STAGE_FULL_KB, candidate_records, decide, offered_candidates,
                            resolve, resolve_deterministic)
 
 
@@ -90,7 +90,16 @@ def test_out_of_scope_abstains(gaz, index):
 def test_vague_query_clarifies_with_candidates(gaz, index):
     r = resolve("Where is security?", gaz, index, SETTINGS.thresholds())
     assert r.decision == "clarify" and r.stage == STAGE_CATEGORY
-    assert set(r.candidates) == {"security_t1_north", "security_t1_south", "security_t2"}
+    # three checkpoints score within 0.002 of each other; only the leader and the
+    # runner-up are offered, the third stays in the ranking for the evidence panel
+    assert len(r.candidates) == 2 and set(r.candidates) <= {"security_t1_north", "security_t1_south", "security_t2"}
+    assert len(r.ranked) == 3
+
+
+def test_offered_candidates_follow_the_margin_rule():
+    assert offered_candidates([("a", 0.49), ("b", 0.46), ("c", 0.41)], 0.1) == ["a", "b"]   # runner-up within margin
+    assert offered_candidates([("a", 0.56), ("b", 0.32), ("c", 0.30)], 0.1) == ["a"]        # clear leader, low score
+    assert offered_candidates([("a", 0.37)], 0.1) == ["a"]
 
 
 def test_assistance_policy_answers(gaz, index):

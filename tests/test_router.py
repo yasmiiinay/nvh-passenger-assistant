@@ -171,3 +171,52 @@ def test_contact_route_prefers_the_record_then_the_terminal(ctx):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ---- QA pass 1: uncertainty rendering and R3 precedence ----
+
+def test_uncertain_image_does_not_override_text_that_offers_candidates(ctx):
+    # the observed suitcase case: text already narrowed to the two reclaim
+    # records, the photo is baggage-first but in the uncertain band
+    t = text("clarify", candidates=["baggage_reclaim_t1", "baggage_reclaim_t2"], stage="category_filter_semantic",
+             query="an airport sign for baggage reclaim")
+    out = apply_rules(t, image("baggage", "uncertain", ["baggage_reclaim_t2", "baggage_reclaim_t1"], score=0.28), None, ctx)
+    assert out.route == "text_leads" and out.decision == "clarify"
+    assert out.candidates == ["baggage_reclaim_t1", "baggage_reclaim_t2"]
+    assert "image_uncertain" in out.flags and "image_uncertain_agrees" in out.flags and not out.conflict
+    shown = render_outcome(out, ctx.gaz)
+    assert "Which of these do you mean?" in shown and "most likely shows a baggage" in shown
+    assert "transport" not in shown and "accessibility" not in shown
+
+
+def test_uncertain_image_of_another_category_is_only_noted(ctx):
+    t = text("clarify", candidates=["baggage_reclaim_t1", "baggage_reclaim_t2"], stage="category_filter_semantic")
+    out = apply_rules(t, image("transport", "uncertain", ["rail_station", "bus_terminal"], score=0.28), None, ctx)
+    assert out.route == "text_leads" and out.decision == "clarify" and not out.conflict
+    assert "image_uncertain" in out.flags and "image_uncertain_agrees" not in out.flags
+    assert "could not identify the sign" in render_outcome(out, ctx.gaz)
+
+
+def test_uncertain_image_still_leads_when_the_text_offers_nothing(ctx):
+    deictic = text("clarify", stage="no_retrieval", flags=["deictic"], entities={"deictic_ref": "this sign"})
+    out = apply_rules(deictic, image("baggage", "uncertain", ["baggage_reclaim_t2", "baggage_reclaim_t1"], score=0.28), None, ctx)
+    assert out.route == "image_leads" and out.decision == "clarify" and "image_uncertain" in out.flags
+    not_understood = text("abstain", candidates=["lounge_aurora"], stage="full_kb_semantic")
+    out = apply_rules(not_understood, image("baggage", "uncertain", ["baggage_reclaim_t2"], score=0.28), None, ctx)
+    assert out.route == "image_leads"
+
+
+def test_uncertain_image_rendering_never_names_a_third_category(ctx):
+    clear_leader = image("baggage", "uncertain", ["baggage_reclaim_t2", "baggage_reclaim_t1"], score=0.28)
+    clear_leader.category_margin = 0.018
+    out = apply_rules(None, clear_leader, None, ctx)
+    shown = render_outcome(out, ctx.gaz)
+    assert "image_no_clear_leader" not in out.flags
+    assert "most likely shows a baggage" in shown and "information" not in shown and "transport" not in shown
+
+    close_runner_up = image("baggage", "uncertain", ["baggage_reclaim_t2"], score=0.28)
+    close_runner_up.category_margin = 0.004
+    out = apply_rules(None, close_runner_up, None, ctx)
+    shown = render_outcome(out, ctx.gaz)
+    assert "image_no_clear_leader" in out.flags
+    assert "baggage" in shown and "information" in shown and "transport" not in shown

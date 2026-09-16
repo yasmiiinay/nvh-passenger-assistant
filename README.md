@@ -116,6 +116,7 @@ python -m src.normalizer                     # prints the normaliser rule table 
 python app/app.py                       # local interface at http://127.0.0.1:7860
 python scripts/run_multimodal_eval.py --split dev        # 35 authored scenarios -> outputs/checkpoint_03_4/multimodal/dev/
 python scripts/run_multimodal_eval.py --split heldout    # 33 held-out scenarios, run once
+python scripts/run_multimodal_eval.py --split regression # scenarios written after interface defects (Chat 04 QA), reported separately
 python scripts/run_multimodal_eval.py --split dev --confirm-image-only   # conservative image-only variant
 ```
 

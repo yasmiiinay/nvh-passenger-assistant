@@ -21,6 +21,7 @@ class Settings:
     queries_seed_path: Path = REPO_ROOT / "data" / "text" / "queries_seed.csv"
     queries_heldout_path: Path = REPO_ROOT / "data" / "text" / "queries_heldout.csv"
     queries_spoken_path: Path = REPO_ROOT / "data" / "text" / "queries_spoken.csv"   # utterances chosen by speakers at recording time
+    queries_qa_path: Path = REPO_ROOT / "data" / "text" / "queries_qa.csv"           # sentences typed during QA interface sessions
     intent_exemplars_path: Path = REPO_ROOT / "data" / "text" / "intent_exemplars.csv"
     outputs_dir: Path = REPO_ROOT / "outputs"
     models_dir: Path = REPO_ROOT / "models"   # local model copies, git-ignored; hub id used if absent
