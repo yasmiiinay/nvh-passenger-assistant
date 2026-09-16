@@ -290,6 +290,8 @@ def render_outcome(outcome, gaz) -> str:
         lines.append(f"From the photo this looks like a {_category_label(category, gaz)} sign.")
     if "text_not_understood" in outcome.flags:
         lines.append("I did not understand the words, so the answer below comes from the photo.")
+    elif "text_weak" in outcome.flags:
+        lines.append("Your words did not match anything closely, so the answer below comes from the photo.")
     lines.extend(_record_text(record, gaz))
     lines.extend(_modality_notes(outcome, gaz))
     lines.append(_image_provenance(outcome))

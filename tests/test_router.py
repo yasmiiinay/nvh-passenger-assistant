@@ -220,3 +220,35 @@ def test_uncertain_image_rendering_never_names_a_third_category(ctx):
     shown = render_outcome(out, ctx.gaz)
     assert "image_no_clear_leader" in out.flags
     assert "baggage" in shown and "information" in shown and "transport" not in shown
+
+
+# ---- QA 04.4 item 1: only a confident text position may contradict a strong photo ----
+
+def _semantic(decision, candidates, score, stage="category_filter_semantic"):
+    t = text(decision, candidates=candidates, stage=stage)
+    t.match_score = score
+    return t
+
+
+def test_weak_clarify_text_does_not_raise_a_conflict(ctx):
+    weak = _semantic("clarify", ["prm_point_t1_checkin", "info_desk_t1_departures"], 0.26)
+    out = apply_rules(weak, image("lounge", "strong match", ["lounge_aurora"]), None, ctx)
+    assert out.route == "image_leads" and out.decision == "answer" and out.matched_record_id == "lounge_aurora"
+    assert not out.conflict and "text_weak" in out.flags
+    assert "comes from the photo" in render_outcome(out, ctx.gaz)
+
+
+def test_weak_candidates_do_not_narrow_the_photo_records(ctx):
+    weak = _semantic("clarify", ["prm_point_t1_checkin"], 0.26)
+    out = apply_rules(weak, image("accessibility", "strong match", ["prm_point_t1_entrance", "prm_point_t1_checkin", "prm_point_t2"]), None, ctx)
+    assert out.decision == "clarify" and "image_needs_terminal" in out.flags and len(out.candidates) == 3
+
+
+def test_confident_clarify_text_still_conflicts(ctx):
+    confident = _semantic("clarify", ["security_t1_south", "security_t1_north", "security_t2"], 0.50)
+    out = apply_rules(confident, image("lounge", "strong match", ["lounge_aurora"]), None, ctx)
+    assert out.decision == "conflict" and out.conflict
+    deterministic = text("clarify", candidates=["gates_pier_b", "gates_pier_c"], stage="exact_identifier",
+                         entities={"gate_id": "B12"})
+    out = apply_rules(deterministic, image("lounge", "strong match", ["lounge_aurora"]), None, ctx)
+    assert out.conflict

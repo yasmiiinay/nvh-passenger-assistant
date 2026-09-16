@@ -150,15 +150,25 @@ def text_is_open(result: RetrievalResult) -> bool:
     return result.decision == "abstain" and "grounded_negative" not in result.flags
 
 
+def text_position_confident(result: RetrievalResult, thresholds: dict) -> bool:
+    """Whether the text says enough to contradict a strong photo: a
+    deterministic stage (no score), or a similarity at or above tau_high. A
+    clarify whose leader sits between tau_low and tau_high is a guess, and a
+    guess must not be defended against a photo (QA 04.4)."""
+    return result.match_score is None or result.match_score >= thresholds["tau_high"]
+
+
 def text_has_candidates(result: RetrievalResult) -> bool:
     """A clarify that already offers records is a question worth keeping; an
     uncertain photo must not replace it with a broader one (QA pass 1)."""
     return result.decision == "clarify" and bool(result.candidates)
 
 
-def narrow_by_text(record_ids: list[str], result: RetrievalResult | None, gaz) -> list[str]:
+def narrow_by_text(record_ids: list[str], result: RetrievalResult | None, gaz,
+                   use_candidates: bool = True) -> list[str]:
     """Keep the image's records that the text does not rule out: a terminal
-    entity narrows to that terminal; clarify candidates narrow to the overlap."""
+    entity narrows to that terminal; clarify candidates narrow to the overlap
+    (not when the candidates are a weak guess, see text_position_confident)."""
     if result is None:
         return record_ids
     narrowed = record_ids
@@ -166,7 +176,7 @@ def narrow_by_text(record_ids: list[str], result: RetrievalResult | None, gaz) -
     if terminal:
         in_terminal = [rid for rid in narrowed if gaz.serves(rid, terminal)]
         narrowed = in_terminal or narrowed
-    if result.decision == "clarify" and result.candidates:
+    if use_candidates and result.decision == "clarify" and result.candidates:
         overlap = [rid for rid in narrowed if rid in result.candidates]
         narrowed = overlap or narrowed
     return narrowed
@@ -199,7 +209,8 @@ def _image_leads(out: Outcome, vision: VisionResult, text: RetrievalResult | Non
     out.image_category = category
     out.score = score
     out.band = vision.band
-    records = narrow_by_text([rid for rid, _ in vision.record_ranking], text, gaz)
+    records = narrow_by_text([rid for rid, _ in vision.record_ranking], text, gaz,
+                             use_candidates="text_weak" not in out.flags)
     out.candidates = records
     if vision.band == "uncertain":
         out.decision = "clarify"
@@ -286,7 +297,8 @@ def apply_rules(text: RetrievalResult | None, vision: VisionResult | None,
             and (image_strong(vision) or not text_has_candidates(text)):
         image_cat = vision.category_ranking[0][0]
         cats = text_categories(text, gaz)
-        if image_strong(vision) and cats and image_cat not in cats and text.decision == "clarify":
+        if image_strong(vision) and cats and image_cat not in cats and text.decision == "clarify" \
+                and text_position_confident(text, ctx.thresholds):
             out.route = "image_leads"
             out.decision = "conflict"
             out.conflict = True
@@ -300,6 +312,8 @@ def apply_rules(text: RetrievalResult | None, vision: VisionResult | None,
         out.route = "image_leads"
         if text.decision == "abstain":
             out.flags.append("text_not_understood")
+        elif text.decision == "clarify" and not text_position_confident(text, ctx.thresholds):
+            out.flags.append("text_weak")
         if "deictic" in text.flags:
             out.flags.append("deictic")
         if cats and image_cat in cats:
