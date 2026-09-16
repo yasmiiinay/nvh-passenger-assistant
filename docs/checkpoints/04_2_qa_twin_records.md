@@ -3,8 +3,9 @@
 17 September 2026. Working mode: TEST → DIAGNOSE → FIX GENERAL CAUSE →
 REGRESSION TEST → COMPARE. Continues from the accepted 04.1. No threshold
 (`tau_high`, `tau_low`, `margin_delta`) was changed; no model, anchor,
-regex or action-request handling was touched. Status: EXECUTED in the
-workspace with all three models present; MacBook re-run outstanding.
+regex or action-request handling was touched. Status: VERIFIED. Re-run on the MacBook on 17 September: every per-scenario,
+cascade and per-image row identical to the workspace run apart from latency
+(MacBook median 50 ms dev, 41 ms held-out, slowest turn 0.50 s).
 
 ## 1. Issue
 
