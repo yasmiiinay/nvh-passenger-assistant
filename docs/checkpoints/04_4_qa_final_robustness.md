@@ -5,8 +5,9 @@ REGRESSION TEST → COMPARE, applied to five carried items in one pass, one
 commit per item so that each before/after is attributable. Models,
 architecture, `tau_high`, `tau_low`, `margin_delta`, the vision anchors
 and the vision bands are unchanged. Baseline for every comparison is the
-accepted 04.3 state (7dcc9a6). Status: EXECUTED in the workspace with all
-three models present; MacBook re-run outstanding.
+accepted 04.3 state (7dcc9a6). Status: VERIFIED. Re-run on the MacBook on 17 September: every text,
+multimodal, speech and vision row identical to the workspace run apart
+from latency (MacBook median 52 ms dev, 39 ms held-out, slowest turn 0.51 s).
 
 Regression cases were written before any of the five changes (qa007–qa014
 in `queries_qa.csv`, mm_142–145 in the manifest) and run once on the
