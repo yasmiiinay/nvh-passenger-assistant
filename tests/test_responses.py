@@ -135,3 +135,16 @@ def test_terminal_question_names_terminals_not_records(gaz):
     assert "Are you in Terminal 1 or Terminal 2?" in text
     assert "Security South" not in text and "Security North" not in text
     assert no_forbidden_claims(text)
+
+
+# ---- QA 04.4 item 5: action requests never read as done ----
+
+@pytest.mark.parametrize("query", ["Can you book me a taxi for 6pm?", "please print my boarding pass",
+                                   "reserve a table at the restaurant", "cancel my parking"])
+def test_action_requests_always_carry_the_refusal_and_never_claim_action(gaz, query):
+    r = resolve_deterministic(query, gaz)
+    r.stage, r.decision, r.candidates = "category_filter_semantic", "clarify", ["taxi_rank_t1"]
+    text = render(r, gaz)
+    assert text.startswith("I cannot book, reserve, print or arrange anything")
+    assert "action_request" in r.flags
+    assert not any(w in text.lower() for w in ("booked", "reserved", "printed", "arranged", "cancelled", "done"))

@@ -199,6 +199,8 @@ if __name__ == "__main__":
         "wrong_record_answers": sum(1 for row in rows if row["decision"] == "answer"
                                     and row["matched_record_id"]
                                     and row["matched_record_id"] != row["target_kb_id"]),
+        "out_of_scope_answers": [row["query_id"] for row in rows
+                                 if row["query_type"] == "out_of_scope" and row["decision"] == "answer"],
         "grounded_negative_answers": [row["query_id"] for row in rows
                                       if row["decision"] == "answer" and "grounded_negative" in row["flags"]],
         "semantic_failures": [{"query_id": row["query_id"], "decision": row["decision"],
