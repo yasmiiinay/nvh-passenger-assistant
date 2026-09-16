@@ -168,9 +168,14 @@ def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction
         return all(span[1] <= s or span[0] >= e for s, e in consumed)
 
     # --- flight references: raw uppercase form, or spoken "flight xy 123" ---
+    # A bare two-letter code with two digits has the same shape as a gate id
+    # that ASR noise has mangled ("B12" heard as "KP12"), so the raw form
+    # needs either the word "flight" or a longer number; flight-status
+    # wording without a code still reaches the redirect through the intent.
     seen_flights: set[str] = set()
     for m in FLIGHT_RAW_PATTERN.finditer(raw):
-        seen_flights.add(f"{m.group(1)} {m.group(2)}")
+        if "flight" in norm.split() or len(m.group(2)) >= 3:
+            seen_flights.add(f"{m.group(1)} {m.group(2)}")
     for m in FLIGHT_SPOKEN_PATTERN.finditer(norm):
         seen_flights.add(f"{m.group(1).upper()} {m.group(2)}")
     for value in sorted(seen_flights):

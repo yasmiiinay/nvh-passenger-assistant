@@ -77,12 +77,14 @@ def test_terminal_closed_set(gaz):
     ("Is my flight NH123 delayed?", "NH 123"),
     ("What gate is flight XY456 leaving from?", "XY 456"),
     ("flight ba 2490", "BA 2490"),              # spoken form directly after 'flight'
+    ("Is LH2004 boarding yet?", "LH 2004"),      # no 'flight' word, but four digits cannot be a gate
 ])
 def test_flight_ref(gaz, text, ref):
     assert values(extract(text, gaz), "flight_ref") == [ref]
 
 
-@pytest.mark.parametrize("text", ["meet at 10 am", "the shop is open until 22 tonight"])
+@pytest.mark.parametrize("text", ["meet at 10 am", "the shop is open until 22 tonight",
+                                  "Where is KP12?"])   # ASR-damaged gate id in flight-code shape
 def test_flight_ref_not_from_plain_numbers(gaz, text):
     assert values(extract(text, gaz), "flight_ref") == []
 
