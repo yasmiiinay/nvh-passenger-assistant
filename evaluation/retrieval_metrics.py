@@ -69,5 +69,23 @@ def judge_outcome(expected_behaviour: str, target_id: str | None, decision: str 
     return "wrong", "; ".join(detail)
 
 
+def clarify_type(decision: str | None, clarification_field: str | None, candidates: list[str], flags: list[str]) -> str | None:
+    """How a clarify was put to the passenger: a targeted question for a KB
+    field (terminal), a single-record confirmation, a list of record names,
+    a request for a photo (deictic), or an open question. None when the
+    decision is not clarify. Counted in the runners; the judge ignores it."""
+    if decision != "clarify":
+        return None
+    if clarification_field:
+        return "targeted_" + clarification_field
+    if "deictic" in flags:
+        return "deictic"
+    if len(candidates) == 1:
+        return "confirm_one"
+    if candidates:
+        return "list"
+    return "open"
+
+
 def write_artifacts(*args, **kwargs):
     raise NotImplementedError("TODO(evaluation phase): persist to outputs/evaluation/retrieval/")

@@ -90,6 +90,7 @@ local data folder, not in any interaction log.
 | target_kb_id | expected record, blank for abstain/clarify/redirect/conflict cases |
 | target_category | for clarify cases, the category the candidates must belong to |
 | expected_conflict | `true` when the modalities disagree and the disagreement must be surfaced |
+| expected_clarification_field | blank (not asserted), `terminal` (the clarify must ask for the terminal rather than list records) or `none` (the clarify must not ask for a field) |
 | consistency_label | `consistent` \| `conflict` \| `single_modality` |
 | conflict_type | blank, or `identifier_mismatch` (photo B12 + text B21), `category_mismatch` (baggage photo + lounge question) |
 | query_type | controlled query type |

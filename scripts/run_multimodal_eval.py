@@ -31,6 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from configs.settings import SETTINGS
 from evaluation.multimodal_metrics import conflict_detection, judge_scenario, rates
+from evaluation.retrieval_metrics import clarify_type
 from src.entities import load_gazetteers
 from src.foundation_audit import load_queries
 from src.retrieval import build_text_index
@@ -104,6 +105,10 @@ def main() -> int:
             "expected_decision": sc["expected_decision"], "decision": out.decision,
             "target_kb_id": sc["target_kb_id"], "record_id": out.matched_record_id or "",
             "candidates": "|".join(out.candidates), "expected_conflict": sc["expected_conflict"] == "true",
+            "clarify_type": clarify_type(out.decision, out.clarification_field, out.candidates, out.flags) or "",
+            "expected_clarification_field": sc.get("expected_clarification_field", ""),
+            "clarification_field_ok": ((out.clarification_field or "none") == sc["expected_clarification_field"]
+                                       if sc.get("expected_clarification_field") else ""),
             "conflict": out.conflict, "band": out.band or "", "score": out.score if out.score is not None else "",
             "verdict": verdict, "text_alone": alone.get("text_alone", ""), "image_alone": alone.get("image_alone", ""),
             "transcript": out.speech.transcript_raw if out.speech is not None and out.speech.transcript_raw else "",
@@ -138,6 +143,9 @@ def main() -> int:
     latencies = sorted(r["latency_s"] for r in results)
     summary = {
         "split": args.split, "confirm_image_only": args.confirm_image_only, "n": len(results),
+        "clarify_types": dict(Counter(r["clarify_type"] for r in results if r["clarify_type"])),
+        "clarification_field_checks": {"n": sum(1 for r in results if r["expected_clarification_field"]),
+                                       "ok": sum(1 for r in results if r["clarification_field_ok"] is True)},
         "routing_accuracy": sum(r["route_ok"] for r in results) / len(results),
         "verdicts": rates(verdicts),
         "safe_rate_when_not_answering_expected": (

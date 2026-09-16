@@ -1,72 +1,76 @@
-sample_id,image_id,query_id,audio_id,modality_condition,scenario_type,expected_route,expected_decision,target_kb_id,target_category,expected_conflict,consistency_label,conflict_type,query_type,split,notes
-mm_001,,q001,,text_only,text_only,text_only,answer,gates_pier_b,,false,single_modality,,precise,dev,
-mm_002,,q004,,text_only,text_only,text_only,clarify,,gate,false,single_modality,,vague,dev,gate unknown; three gate records
-mm_003,img_008,,,image_only,image_only,image_only,answer,lounge_aurora,lounge,false,single_modality,,deictic,dev,single record in category
-mm_004,img_006,,,image_only,image_only,image_only,clarify,,baggage,false,single_modality,,deictic,dev,two reclaim records; terminal unknown
-mm_005,img_016,,,image_only,image_only,image_only,answer,first_aid_t1,medical,false,single_modality,,deictic,dev,
-mm_006,,,aud_025,voice_only,speech_only,voice_only,answer,gates_pier_b,,false,single_modality,,precise,dev,
-mm_007,,,aud_103,voice_only,speech_only,voice_only,answer,baggage_reclaim_t2,,false,single_modality,,precise,dev,"belt 8, Indian English voice"
-mm_008,,,aud_031,voice_only,speech_only,voice_only,answer,baggage_reclaim_t2,,false,single_modality,,precise,dev,known ASR loss: belt 8 heard as bell date in 03.3
-mm_009,img_001,q001,,image_text_consistent,text_image_consistent,text_leads,answer,gates_pier_b,gate,false,consistent,,precise,dev,
-mm_010,img_006,q011,,image_text_consistent,text_image_consistent,text_leads,answer,baggage_reclaim_t1,baggage,false,consistent,,precise,dev,
-mm_011,img_010,q021,,image_text_consistent,text_image_consistent,image_leads,clarify,,restaurant,false,consistent,,vague,dev,typed text alone was misread as check-in in 03.2; the photo should lead
-mm_012,img_008,q018,,image_text_consistent,text_image_consistent,text_leads,answer,lounge_aurora,lounge,false,consistent,,vague,dev,
-mm_013,img_006,q001,,image_text_conflict,text_image_conflict,text_leads,answer,gates_pier_b,gate,true,conflict,category_mismatch,precise,dev,"identifier leads; disagreement surfaced, not merged"
-mm_014,img_010,q018,,image_text_conflict,text_image_conflict,text_leads,conflict,,,true,conflict,category_mismatch,vague,dev,alias answer vs strong restaurant photo
-mm_015,img_010,q024,,image_text_conflict,text_image_conflict,image_leads,conflict,,,true,conflict,category_mismatch,vague,dev,vague toilet question vs restaurant photo
-mm_016,img_001,q042,,image_text_consistent,deictic_text_image,image_leads,clarify,,gate,false,single_modality,,deictic,dev,three gate records; ask terminal
-mm_017,img_008,q042,,image_text_consistent,deictic_text_image,image_leads,answer,lounge_aurora,lounge,false,single_modality,,deictic,dev,
-mm_018,img_017,q042,,image_text_consistent,deictic_text_image,image_leads,answer,first_aid_t1,medical,false,single_modality,,deictic,dev,red first-aid variant
-mm_019,img_001,,aud_025,voice_image,speech_image_consistent,voice_leads,answer,gates_pier_b,gate,false,consistent,,precise,dev,
-mm_020,img_006,,aud_030,voice_image,speech_image_consistent,voice_leads,answer,baggage_reclaim_t1,baggage,false,consistent,,precise,dev,
-mm_021,img_010,,aud_025,voice_image,speech_image_conflict,voice_leads,answer,gates_pier_b,gate,true,conflict,category_mismatch,precise,dev,identifier leads; disagreement surfaced
-mm_022,img_014,,aud_033,voice_image,speech_image_conflict,voice_leads,conflict,,,true,conflict,category_mismatch,precise,dev,lounge question vs toilet photo
-mm_023,img_027,,,image_only,oos_image,image_only,abstain,,,false,single_modality,,out_of_scope,dev,barbershop pictogram; anchors known weak on pictograms
-mm_024,img_032,,,image_only,oos_image,image_only,abstain,,,false,single_modality,,out_of_scope,dev,drinking fountain; strong restroom match in 03.3
-mm_025,,q038,,text_only,oos_text,text_only,abstain,,,false,single_modality,,out_of_scope,dev,
-mm_026,,q040,,text_only,oos_text,text_only,abstain,,,false,single_modality,,out_of_scope,dev,
-mm_027,,q035,,text_only,volatile,text_only,redirect,flight_information,,false,single_modality,,volatile,dev,
-mm_028,img_001,,aud_040,voice_image,volatile,voice_leads,redirect,flight_information,,false,single_modality,,volatile,dev,photo must not change a redirect
-mm_029,,q039,,text_only,action_request,text_only,abstain,,,false,single_modality,,out_of_scope,dev,book a taxi: action request caveat expected
-mm_030,img_022,,,image_only,low_quality_image,image_only,abstain,,,false,single_modality,,out_of_scope,dev,white symbol on transparent background renders blank
-mm_031,,,aud_126,voice_only,low_quality_audio,none,clarify,,,false,single_modality,,precise,dev,gain below the loudness gate; ask to re-record
-mm_032,,,aud_127,voice_only,low_quality_audio,voice_only,answer,gates_pier_b,,false,single_modality,,precise,dev,white noise at 5 dB SNR
-mm_033,img_008,,aud_126,voice_image,low_quality_audio,image_only,answer,lounge_aurora,lounge,false,single_modality,,deictic,dev,rejected clip; the photo carries the turn
-mm_034,img_001,q040,,image_text_consistent,oos_text,image_leads,clarify,,gate,false,single_modality,,out_of_scope,dev,wifi question not understood; the photo leads
-mm_035,img_001,q041,,image_text_consistent,text_only,text_leads,abstain,,,false,single_modality,,precise,dev,gate B21 does not exist: grounded negative must survive an agreeing photo
-mm_101,,h001,,text_only,text_only,text_only,answer,gates_pier_a,,false,single_modality,,precise,heldout,
-mm_102,,h019,,text_only,oos_text,text_only,abstain,,,false,single_modality,,out_of_scope,heldout,
-mm_103,img_002,,,image_only,image_only,image_only,clarify,,gate,false,single_modality,,deictic,heldout,
-mm_104,img_015,,,image_only,image_only,image_only,clarify,,restroom,false,single_modality,,deictic,heldout,
-mm_105,img_080,,,image_only,image_only,image_only,clarify,,restaurant,false,single_modality,,deictic,heldout,coffee shop photo crop
-mm_106,,,aud_045,voice_only,speech_only,voice_only,answer,gates_pier_a,,false,single_modality,,precise,heldout,
-mm_107,,,aud_124,voice_only,speech_only,voice_only,answer,gates_pier_c,,false,single_modality,,precise,heldout,human speaker
-mm_108,,,aud_121,voice_only,speech_only,voice_only,answer,baggage_reclaim_t2,,false,single_modality,,precise,heldout,human speaker; known ASR loss on belt 9
-mm_109,img_075,h008,,image_text_consistent,text_image_consistent,text_leads,answer,baggage_reclaim_t2,baggage,false,consistent,,precise,heldout,
-mm_110,img_087,h012,,image_text_consistent,text_image_consistent,text_leads,answer,info_desk_t2,information,false,consistent,,precise,heldout,defocused information photo
-mm_111,img_069,h001,,image_text_conflict,text_image_conflict,text_leads,answer,gates_pier_a,gate,true,conflict,category_mismatch,precise,heldout,identifier leads
-mm_112,img_092,h015,,image_text_conflict,text_image_conflict,text_leads,conflict,,,true,conflict,category_mismatch,paraphrase,heldout,cafe answer vs toilet photo
-mm_113,img_070,h018,,image_text_conflict,text_image_conflict,image_leads,conflict,,,true,conflict,category_mismatch,vague,heldout,toilets question vs restaurant photo
-mm_114,img_068,h031,,image_text_consistent,deictic_text_image,image_leads,clarify,,check_in,false,single_modality,,deictic,heldout,suitcase symbol labelled check-in; known baggage confusion
-mm_115,img_083,h031,,image_text_consistent,deictic_text_image,image_leads,clarify,,gate,false,single_modality,,deictic,heldout,
-mm_116,img_076,,aud_122,voice_image,speech_image_consistent,voice_leads,answer,baggage_reclaim_t2,baggage,false,consistent,,precise,heldout,human speaker
-mm_117,img_082,,aud_045,voice_image,speech_image_consistent,voice_leads,answer,gates_pier_a,gate,false,consistent,,precise,heldout,inverted departing-flights photo
-mm_118,img_069,,aud_124,voice_image,speech_image_conflict,voice_leads,answer,gates_pier_c,gate,true,conflict,category_mismatch,precise,heldout,human speaker; identifier leads
-mm_119,img_015,,aud_047,voice_image,speech_image_conflict,voice_leads,conflict,,,true,conflict,category_mismatch,precise,heldout,belts question vs toilet photo
-mm_120,img_098,,,image_only,oos_image,image_only,abstain,,,false,single_modality,,out_of_scope,heldout,"photograph, sunset"
-mm_121,img_071,,,image_only,oos_image,image_only,abstain,,,false,single_modality,,out_of_scope,heldout,barbershop photo crop; strong restroom match in 03.3
-mm_122,img_081,,,image_only,oos_image,image_only,abstain,,,false,single_modality,,out_of_scope,heldout,customs: airport-adjacent
-mm_123,,h023,,text_only,oos_text,text_only,abstain,,,false,single_modality,,out_of_scope,heldout,
-mm_124,,h032,,text_only,oos_text,text_only,abstain,,,false,single_modality,,non_english,heldout,
-mm_125,,h028,,text_only,volatile,text_only,redirect,flight_information,,false,single_modality,,volatile,heldout,
-mm_126,img_002,,aud_120,voice_image,volatile,voice_leads,redirect,flight_information,,false,single_modality,,volatile,heldout,Indian English voice; LH 2004
-mm_127,,h030,,text_only,action_request,text_only,abstain,,,false,single_modality,,out_of_scope,heldout,print boarding pass
-mm_128,,h029,,text_only,action_request,text_only,redirect,flight_information,,false,single_modality,,volatile,heldout,rebook: volatile and action
-mm_129,img_084,,,image_only,low_quality_image,image_only,abstain,,,false,single_modality,,out_of_scope,heldout,defocused escalator
-mm_130,img_092,,,image_only,low_quality_image,image_only,clarify,,restroom,false,single_modality,,deictic,heldout,"defocused, angled toilets"
-mm_131,img_002,,aud_128,voice_image,low_quality_audio,image_only,clarify,,gate,false,single_modality,,precise,heldout,rejected clip; photo carries the turn
-mm_132,,,aud_129,voice_only,low_quality_audio,voice_only,answer,gates_pier_a,,false,single_modality,,precise,heldout,white noise at 5 dB SNR
-mm_133,img_005,,,image_only,image_only,image_only,clarify,,check_in,false,single_modality,,deictic,heldout,AIGA baggage check-in symbol; known baggage confusion
-mm_134,img_004,q005,,text_image,uncertain_image_text_candidates,text_leads,clarify,,check_in,false,consistent,,vague,regression,check-in pictogram in the uncertain band (check_in first, security within the margin) with text that already offers the two check-in records; the text question must stand
-mm_135,img_023,q010,,text_image,uncertain_image_text_candidates,text_leads,clarify,,baggage,false,conflict,category_mismatch,paraphrase,regression,transport pictogram in the uncertain band with a baggage question; the text question stands and the photo is only noted, no conflict from an uncertain photo
-mm_136,img_005,qa001,,text_image,uncertain_image_text_candidates,text_leads,clarify,,baggage,false,consistent,,vague,regression,the observed interface case: baggage check-in suitcase (baggage first, uncertain) with text that offers the two reclaim records
+sample_id,image_id,query_id,audio_id,modality_condition,scenario_type,expected_route,expected_decision,target_kb_id,target_category,expected_conflict,expected_clarification_field,consistency_label,conflict_type,query_type,split,notes
+mm_001,,q001,,text_only,text_only,text_only,answer,gates_pier_b,,false,,single_modality,,precise,dev,
+mm_002,,q004,,text_only,text_only,text_only,clarify,,gate,false,,single_modality,,vague,dev,gate unknown; three gate records
+mm_003,img_008,,,image_only,image_only,image_only,answer,lounge_aurora,lounge,false,,single_modality,,deictic,dev,single record in category
+mm_004,img_006,,,image_only,image_only,image_only,clarify,,baggage,false,,single_modality,,deictic,dev,two reclaim records; terminal unknown
+mm_005,img_016,,,image_only,image_only,image_only,answer,first_aid_t1,medical,false,,single_modality,,deictic,dev,
+mm_006,,,aud_025,voice_only,speech_only,voice_only,answer,gates_pier_b,,false,,single_modality,,precise,dev,
+mm_007,,,aud_103,voice_only,speech_only,voice_only,answer,baggage_reclaim_t2,,false,,single_modality,,precise,dev,"belt 8, Indian English voice"
+mm_008,,,aud_031,voice_only,speech_only,voice_only,answer,baggage_reclaim_t2,,false,,single_modality,,precise,dev,known ASR loss: belt 8 heard as bell date in 03.3
+mm_009,img_001,q001,,image_text_consistent,text_image_consistent,text_leads,answer,gates_pier_b,gate,false,,consistent,,precise,dev,
+mm_010,img_006,q011,,image_text_consistent,text_image_consistent,text_leads,answer,baggage_reclaim_t1,baggage,false,,consistent,,precise,dev,
+mm_011,img_010,q021,,image_text_consistent,text_image_consistent,image_leads,clarify,,restaurant,false,,consistent,,vague,dev,typed text alone was misread as check-in in 03.2; the photo should lead
+mm_012,img_008,q018,,image_text_consistent,text_image_consistent,text_leads,answer,lounge_aurora,lounge,false,,consistent,,vague,dev,
+mm_013,img_006,q001,,image_text_conflict,text_image_conflict,text_leads,answer,gates_pier_b,gate,true,,conflict,category_mismatch,precise,dev,"identifier leads; disagreement surfaced, not merged"
+mm_014,img_010,q018,,image_text_conflict,text_image_conflict,text_leads,conflict,,,true,,conflict,category_mismatch,vague,dev,alias answer vs strong restaurant photo
+mm_015,img_010,q024,,image_text_conflict,text_image_conflict,image_leads,conflict,,,true,,conflict,category_mismatch,vague,dev,vague toilet question vs restaurant photo
+mm_016,img_001,q042,,image_text_consistent,deictic_text_image,image_leads,clarify,,gate,false,,single_modality,,deictic,dev,three gate records; ask terminal
+mm_017,img_008,q042,,image_text_consistent,deictic_text_image,image_leads,answer,lounge_aurora,lounge,false,,single_modality,,deictic,dev,
+mm_018,img_017,q042,,image_text_consistent,deictic_text_image,image_leads,answer,first_aid_t1,medical,false,,single_modality,,deictic,dev,red first-aid variant
+mm_019,img_001,,aud_025,voice_image,speech_image_consistent,voice_leads,answer,gates_pier_b,gate,false,,consistent,,precise,dev,
+mm_020,img_006,,aud_030,voice_image,speech_image_consistent,voice_leads,answer,baggage_reclaim_t1,baggage,false,,consistent,,precise,dev,
+mm_021,img_010,,aud_025,voice_image,speech_image_conflict,voice_leads,answer,gates_pier_b,gate,true,,conflict,category_mismatch,precise,dev,identifier leads; disagreement surfaced
+mm_022,img_014,,aud_033,voice_image,speech_image_conflict,voice_leads,conflict,,,true,,conflict,category_mismatch,precise,dev,lounge question vs toilet photo
+mm_023,img_027,,,image_only,oos_image,image_only,abstain,,,false,,single_modality,,out_of_scope,dev,barbershop pictogram; anchors known weak on pictograms
+mm_024,img_032,,,image_only,oos_image,image_only,abstain,,,false,,single_modality,,out_of_scope,dev,drinking fountain; strong restroom match in 03.3
+mm_025,,q038,,text_only,oos_text,text_only,abstain,,,false,,single_modality,,out_of_scope,dev,
+mm_026,,q040,,text_only,oos_text,text_only,abstain,,,false,,single_modality,,out_of_scope,dev,
+mm_027,,q035,,text_only,volatile,text_only,redirect,flight_information,,false,,single_modality,,volatile,dev,
+mm_028,img_001,,aud_040,voice_image,volatile,voice_leads,redirect,flight_information,,false,,single_modality,,volatile,dev,photo must not change a redirect
+mm_029,,q039,,text_only,action_request,text_only,abstain,,,false,,single_modality,,out_of_scope,dev,book a taxi: action request caveat expected
+mm_030,img_022,,,image_only,low_quality_image,image_only,abstain,,,false,,single_modality,,out_of_scope,dev,white symbol on transparent background renders blank
+mm_031,,,aud_126,voice_only,low_quality_audio,none,clarify,,,false,,single_modality,,precise,dev,gain below the loudness gate; ask to re-record
+mm_032,,,aud_127,voice_only,low_quality_audio,voice_only,answer,gates_pier_b,,false,,single_modality,,precise,dev,white noise at 5 dB SNR
+mm_033,img_008,,aud_126,voice_image,low_quality_audio,image_only,answer,lounge_aurora,lounge,false,,single_modality,,deictic,dev,rejected clip; the photo carries the turn
+mm_034,img_001,q040,,image_text_consistent,oos_text,image_leads,clarify,,gate,false,,single_modality,,out_of_scope,dev,wifi question not understood; the photo leads
+mm_035,img_001,q041,,image_text_consistent,text_only,text_leads,abstain,,,false,,single_modality,,precise,dev,gate B21 does not exist: grounded negative must survive an agreeing photo
+mm_101,,h001,,text_only,text_only,text_only,answer,gates_pier_a,,false,,single_modality,,precise,heldout,
+mm_102,,h019,,text_only,oos_text,text_only,abstain,,,false,,single_modality,,out_of_scope,heldout,
+mm_103,img_002,,,image_only,image_only,image_only,clarify,,gate,false,,single_modality,,deictic,heldout,
+mm_104,img_015,,,image_only,image_only,image_only,clarify,,restroom,false,,single_modality,,deictic,heldout,
+mm_105,img_080,,,image_only,image_only,image_only,clarify,,restaurant,false,,single_modality,,deictic,heldout,coffee shop photo crop
+mm_106,,,aud_045,voice_only,speech_only,voice_only,answer,gates_pier_a,,false,,single_modality,,precise,heldout,
+mm_107,,,aud_124,voice_only,speech_only,voice_only,answer,gates_pier_c,,false,,single_modality,,precise,heldout,human speaker
+mm_108,,,aud_121,voice_only,speech_only,voice_only,answer,baggage_reclaim_t2,,false,,single_modality,,precise,heldout,human speaker; known ASR loss on belt 9
+mm_109,img_075,h008,,image_text_consistent,text_image_consistent,text_leads,answer,baggage_reclaim_t2,baggage,false,,consistent,,precise,heldout,
+mm_110,img_087,h012,,image_text_consistent,text_image_consistent,text_leads,answer,info_desk_t2,information,false,,consistent,,precise,heldout,defocused information photo
+mm_111,img_069,h001,,image_text_conflict,text_image_conflict,text_leads,answer,gates_pier_a,gate,true,,conflict,category_mismatch,precise,heldout,identifier leads
+mm_112,img_092,h015,,image_text_conflict,text_image_conflict,text_leads,conflict,,,true,,conflict,category_mismatch,paraphrase,heldout,cafe answer vs toilet photo
+mm_113,img_070,h018,,image_text_conflict,text_image_conflict,image_leads,conflict,,,true,,conflict,category_mismatch,vague,heldout,toilets question vs restaurant photo
+mm_114,img_068,h031,,image_text_consistent,deictic_text_image,image_leads,clarify,,check_in,false,,single_modality,,deictic,heldout,suitcase symbol labelled check-in; known baggage confusion
+mm_115,img_083,h031,,image_text_consistent,deictic_text_image,image_leads,clarify,,gate,false,,single_modality,,deictic,heldout,
+mm_116,img_076,,aud_122,voice_image,speech_image_consistent,voice_leads,answer,baggage_reclaim_t2,baggage,false,,consistent,,precise,heldout,human speaker
+mm_117,img_082,,aud_045,voice_image,speech_image_consistent,voice_leads,answer,gates_pier_a,gate,false,,consistent,,precise,heldout,inverted departing-flights photo
+mm_118,img_069,,aud_124,voice_image,speech_image_conflict,voice_leads,answer,gates_pier_c,gate,true,,conflict,category_mismatch,precise,heldout,human speaker; identifier leads
+mm_119,img_015,,aud_047,voice_image,speech_image_conflict,voice_leads,conflict,,,true,,conflict,category_mismatch,precise,heldout,belts question vs toilet photo
+mm_120,img_098,,,image_only,oos_image,image_only,abstain,,,false,,single_modality,,out_of_scope,heldout,"photograph, sunset"
+mm_121,img_071,,,image_only,oos_image,image_only,abstain,,,false,,single_modality,,out_of_scope,heldout,barbershop photo crop; strong restroom match in 03.3
+mm_122,img_081,,,image_only,oos_image,image_only,abstain,,,false,,single_modality,,out_of_scope,heldout,customs: airport-adjacent
+mm_123,,h023,,text_only,oos_text,text_only,abstain,,,false,,single_modality,,out_of_scope,heldout,
+mm_124,,h032,,text_only,oos_text,text_only,abstain,,,false,,single_modality,,non_english,heldout,
+mm_125,,h028,,text_only,volatile,text_only,redirect,flight_information,,false,,single_modality,,volatile,heldout,
+mm_126,img_002,,aud_120,voice_image,volatile,voice_leads,redirect,flight_information,,false,,single_modality,,volatile,heldout,Indian English voice; LH 2004
+mm_127,,h030,,text_only,action_request,text_only,abstain,,,false,,single_modality,,out_of_scope,heldout,print boarding pass
+mm_128,,h029,,text_only,action_request,text_only,redirect,flight_information,,false,,single_modality,,volatile,heldout,rebook: volatile and action
+mm_129,img_084,,,image_only,low_quality_image,image_only,abstain,,,false,,single_modality,,out_of_scope,heldout,defocused escalator
+mm_130,img_092,,,image_only,low_quality_image,image_only,clarify,,restroom,false,,single_modality,,deictic,heldout,"defocused, angled toilets"
+mm_131,img_002,,aud_128,voice_image,low_quality_audio,image_only,clarify,,gate,false,,single_modality,,precise,heldout,rejected clip; photo carries the turn
+mm_132,,,aud_129,voice_only,low_quality_audio,voice_only,answer,gates_pier_a,,false,,single_modality,,precise,heldout,white noise at 5 dB SNR
+mm_133,img_005,,,image_only,image_only,image_only,clarify,,check_in,false,,single_modality,,deictic,heldout,AIGA baggage check-in symbol; known baggage confusion
+mm_134,img_004,q005,,text_image,uncertain_image_text_candidates,text_leads,clarify,,check_in,false,,consistent,,vague,regression,"check-in pictogram in the uncertain band (check_in first, security within the margin) with text that already offers the two check-in records; the text question must stand"
+mm_135,img_023,q010,,text_image,uncertain_image_text_candidates,text_leads,clarify,,baggage,false,,conflict,category_mismatch,paraphrase,regression,"transport pictogram in the uncertain band with a baggage question; the text question stands and the photo is only noted, no conflict from an uncertain photo"
+mm_136,img_005,qa001,,text_image,uncertain_image_text_candidates,text_leads,clarify,,baggage,false,,consistent,,vague,regression,"the observed interface case: baggage check-in suitcase (baggage first, uncertain) with text that offers the two reclaim records"
+mm_137,,q005,,text_only,twin_records,text_only,clarify,,check_in,false,terminal,single_modality,,vague,regression,"two check-in records, one per terminal, tied within the margin; ask for the terminal instead of listing both"
+mm_138,,q008,,text_only,twin_records,text_only,clarify,,security,false,terminal,single_modality,,vague,regression,"three security records within 0.04 across both terminals; ask for the terminal, never list three names"
+mm_139,,h006,,text_only,twin_records,text_only,clarify,,security,false,none,single_modality,,vague,regression,terminal already in the text: narrowed to the two Terminal 1 checkpoints before any question; the terminal must not be asked again
+mm_140,,q017,,text_only,twin_records,text_only,clarify,,information,false,none,single_modality,,vague,regression,"tied candidates span two categories (information desk, check-in); the terminal rule must not fire, the short list stands"

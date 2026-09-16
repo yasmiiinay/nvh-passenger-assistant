@@ -15,7 +15,7 @@ from evaluation.retrieval_metrics import judge_outcome
 from src.entities import load_gazetteers
 from src.foundation_audit import load_queries
 from src import retrieval
-from src.retrieval import (STAGE_CATEGORY, STAGE_FULL_KB, candidate_records, decide, offered_candidates,
+from src.retrieval import (STAGE_CATEGORY, STAGE_FULL_KB, candidate_records, decide, offered_candidates, tied_by_terminal,
                            resolve, resolve_deterministic)
 
 
@@ -90,10 +90,33 @@ def test_out_of_scope_abstains(gaz, index):
 def test_vague_query_clarifies_with_candidates(gaz, index):
     r = resolve("Where is security?", gaz, index, SETTINGS.thresholds())
     assert r.decision == "clarify" and r.stage == STAGE_CATEGORY
-    # three checkpoints score within 0.002 of each other; only the leader and the
-    # runner-up are offered, the third stays in the ranking for the evidence panel
-    assert len(r.candidates) == 2 and set(r.candidates) <= {"security_t1_north", "security_t1_south", "security_t2"}
+    # three checkpoints of one category within the margin across both terminals:
+    # the question asks for the terminal, no record name is offered
+    assert r.clarification_field == "terminal"
+    assert set(r.candidates) == {"security_t1_north", "security_t1_south", "security_t2"}
     assert len(r.ranked) == 3
+
+
+def test_terminal_in_the_text_narrows_before_asking(gaz, index):
+    r = resolve("Is there a second security checkpoint in terminal 1?", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "clarify" and r.clarification_field is None
+    assert set(r.candidates) == {"security_t1_north", "security_t1_south"}
+
+
+def test_mixed_category_candidates_are_listed_not_asked_by_terminal(gaz, index):
+    r = resolve("information desk arrivals", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "clarify" and r.clarification_field is None
+    assert len(r.candidates) == 2
+
+
+def test_tied_by_terminal_rule():
+    class Gaz:
+        records = {"a": {"category": "x", "terminal": "Terminal 1"}, "b": {"category": "x", "terminal": "Terminal 2"},
+                   "c": {"category": "y", "terminal": "Terminal 2"}, "d": {"category": "x", "terminal": "Terminal 1"}}
+    assert tied_by_terminal([("a", 0.50), ("b", 0.48), ("c", 0.30)], 0.1, Gaz) == ["a", "b"]
+    assert tied_by_terminal([("a", 0.50), ("c", 0.48)], 0.1, Gaz) == []        # two categories
+    assert tied_by_terminal([("a", 0.50), ("d", 0.48)], 0.1, Gaz) == []        # one terminal
+    assert tied_by_terminal([("a", 0.50), ("b", 0.35)], 0.1, Gaz) == []        # runner-up outside the margin
 
 
 def test_offered_candidates_follow_the_margin_rule():

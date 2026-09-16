@@ -123,3 +123,13 @@ def test_semantic_answer_names_the_band_not_the_number(gaz, index):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+def test_terminal_question_names_terminals_not_records(gaz):
+    r = resolve_deterministic("Where is security?", gaz)
+    r.stage, r.decision = "category_filter_semantic", "clarify"
+    r.candidates, r.clarification_field = ["security_t1_south", "security_t1_north", "security_t2"], "terminal"
+    text = render(r, gaz)
+    assert "Are you in Terminal 1 or Terminal 2?" in text
+    assert "Security South" not in text and "Security North" not in text
+    assert no_forbidden_claims(text)

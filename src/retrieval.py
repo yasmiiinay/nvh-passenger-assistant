@@ -67,6 +67,7 @@ class RetrievalResult:
     match_score: float | None = None  # cosine similarity of the top record
     margin: float | None = None       # top1 - top2 cosine
     ranked: list[tuple[str, float]] = field(default_factory=list)   # top records with scores
+    clarification_field: str | None = None   # "terminal" when the clarify asks for it instead of listing records
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -284,6 +285,23 @@ def offered_candidates(ranked: list[tuple[str, float]], margin_delta: float) -> 
     return offered
 
 
+def tied_by_terminal(ranked: list[tuple[str, float]], margin_delta: float, gaz: Gazetteers) -> list[str]:
+    """Records within margin_delta of the leader when they are all one category
+    and sit in more than one terminal: the passenger's terminal, not a list of
+    names, is then the missing piece. Terminal is the only such field the
+    entity extractor can read back, so level and zone are not asked for.
+    Returns [] when the rule does not apply."""
+    top = ranked[0][1]
+    tied = [rid for rid, score in ranked if top - score < margin_delta]
+    if len(tied) < 2:
+        return []
+    if len({gaz.records[rid]["category"] for rid in tied}) != 1:
+        return []
+    if len({gaz.records[rid]["terminal"] for rid in tied}) < 2:
+        return []
+    return tied
+
+
 def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex, thresholds: dict,
                      filter_mode: str = "intent", query_vec: np.ndarray | None = None) -> RetrievalResult:
     """Semantic stages for a query the deterministic stages left unresolved.
@@ -329,6 +347,12 @@ def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex,
     if decision == "answer":
         return _decide(result, stage, "answer", f"top record {top_id} at {score:.2f}, margin {margin:.2f}", top_id)
     if decision == "clarify":
+        tied = tied_by_terminal(ranked, thresholds["margin_delta"], gaz)
+        if tied and not result.entities.get("terminal"):
+            result.clarification_field = "terminal"
+            return _decide(result, stage, "clarify",
+                           f"{len(tied)} {gaz.records[tied[0]]['category']} records within the margin across terminals; asking for the terminal",
+                           None, tied)
         return _decide(result, stage, "clarify",
                        f"score {score:.2f} or margin {margin:.2f} below threshold; offering top candidates",
                        None, offered_candidates(ranked, thresholds["margin_delta"]))

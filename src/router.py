@@ -75,6 +75,7 @@ class Outcome:
     flags: list[str] = field(default_factory=list)
     conflict: bool = False
     conflict_detail: dict = field(default_factory=dict)
+    clarification_field: str | None = None      # "terminal" when the question asks for it rather than listing records
     image_category: str | None = None
     modalities: list[str] = field(default_factory=list)   # what the passenger supplied and was usable
     text: RetrievalResult | None = None
@@ -186,6 +187,7 @@ def _from_text(out: Outcome, result: RetrievalResult) -> Outcome:
     out.band = BAND_FOR_TEXT_DECISION[result.decision]
     out.score = result.match_score
     out.reason = result.reason
+    out.clarification_field = result.clarification_field
     out.flags.extend(result.flags)
     return out
 
@@ -217,6 +219,7 @@ def _image_leads(out: Outcome, vision: VisionResult, text: RetrievalResult | Non
         out.reason = f"image category {category} ({score:.2f}) leaves one record"
         return out
     out.decision = "clarify"
+    out.clarification_field = "terminal"
     out.flags.append("image_needs_terminal")
     out.reason = f"image category {category} ({score:.2f}) matches {len(records)} records; terminal unknown"
     return out

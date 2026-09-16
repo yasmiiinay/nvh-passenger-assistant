@@ -32,7 +32,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from configs.settings import SETTINGS
-from evaluation.retrieval_metrics import (decision_rates, judge_outcome, outcome_accuracy_by_type,
+from evaluation.retrieval_metrics import (clarify_type, decision_rates, judge_outcome, outcome_accuracy_by_type,
                                           retrieval_accuracy_by_type, stage_firing_counts)
 from evaluation.text_metrics import intent_confusion, intent_prf
 from src.entities import load_gazetteers
@@ -166,7 +166,9 @@ if __name__ == "__main__":
         rows.append({"query_id": q["query_id"], "query": q["query"], "query_type": q["query_type"],
                      "expected_behaviour": q["expected_behaviour"], "target_kb_id": q["target_kb_id"],
                      "stage": r.stage, "decision": r.decision, "matched_record_id": r.matched_record_id or "",
-                     "candidates": "|".join(r.candidates), "intent": r.intent or "",
+                     "candidates": "|".join(r.candidates),
+                     "clarify_type": clarify_type(r.decision, r.clarification_field, r.candidates, r.flags) or "",
+                     "intent": r.intent or "",
                      "intent_score": r.intent_score if r.intent_score is not None else "",
                      "match_score": r.match_score if r.match_score is not None else "",
                      "margin": r.margin if r.margin is not None else "",
@@ -183,6 +185,7 @@ if __name__ == "__main__":
         "decision_counts": {k: v for k, v in decision_rates([r.decision for r in results]).items() if k != "n"},
         "semantic_stage_decisions": dict(Counter(row["decision"] for row in semantic_rows)),
         "verdicts_all": dict(Counter(row["verdict"] for row in rows)),
+        "clarify_types": dict(Counter(row["clarify_type"] for row in rows if row["clarify_type"])),
         "verdicts_semantic_workload": dict(Counter(row["verdict"] for row in semantic_rows)),
         "record_accuracy_by_query_type": retrieval_accuracy_by_type(
             [q["query_type"] for q in queries], [q["target_kb_id"] for q in queries],

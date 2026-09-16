@@ -67,3 +67,4 @@ def rates(verdicts: list[str]) -> dict:
             "correct_rate": counts.get("correct", 0) / n if n else 0.0,
             "wrong_confident_rate": counts.get("wrong_confident", 0) / n if n else 0.0,
             "over_cautious_rate": counts.get("over_cautious", 0) / n if n else 0.0}
+

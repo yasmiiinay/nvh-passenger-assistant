@@ -128,6 +128,11 @@ def render(result: RetrievalResult, gaz) -> str:
     if result.decision == "clarify":
         if "deictic" in result.flags:
             lines.append("Please add a photo of the sign so I can identify it, or describe where you are.")
+        elif result.clarification_field == "terminal":
+            category = gaz.records[result.candidates[0]]["category"].replace("_", "-")
+            terminals = sorted({gaz.records[rid]["terminal"] for rid in result.candidates})
+            lines.append(f"There is more than one {category} location. Are you in {' or '.join(terminals)}? "
+                         f"Ask again with the terminal, for example \"{category} in {terminals[0]}\".")
         elif len(result.candidates) == 1:
             lines.append(f"Do you mean {gaz.records[result.candidates[0]]['name']}? "
                          "Please confirm, or say a bit more about what you are looking for.")
