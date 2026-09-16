@@ -11,6 +11,8 @@ by the cascade decide which caveats are added:
   terminal_mismatch         the service exists, but only in the other terminal
   cross_terminal_service    the record sits in another terminal but serves the
                             one asked about (airport-level service)
+  terminal_retargeted       the alias named a record elsewhere; the answer is
+                            the same kind of record in the terminal asked about
   assist_policy             assistance request answered with the nearest point
   action_request            the passenger asked us to do something (book,
                             reserve, print); we only give information
@@ -158,6 +160,8 @@ def render(result: RetrievalResult, gaz) -> str:
     record = gaz.records[result.matched_record_id]
     if "terminal_mismatch" in result.flags:
         lines.append(f"{record['name']} is not at {_asked_terminal(result)}; it is at {record['terminal']}.")
+    if "terminal_retargeted" in result.flags:
+        lines.append(f"For {_asked_terminal(result)}, that is:")
     if "cross_terminal_service" in result.flags:
         lines.append(f"{record['name']} is in {record['terminal']} and also serves {_asked_terminal(result)}.")
     if "assist_policy" in result.flags:

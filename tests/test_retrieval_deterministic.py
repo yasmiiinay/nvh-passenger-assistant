@@ -159,3 +159,22 @@ def test_seed_set_no_false_resolution(gaz):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ---- QA 04.4 item 3: aliases against the terminal asked about ----
+
+def test_alias_retargets_to_the_same_kind_of_record_in_the_asked_terminal(gaz):
+    r = resolve_deterministic("Where is the check-in hall in Terminal 2?", gaz)
+    assert r.matched_record_id == "checkin_t2" and "terminal_retargeted" in r.flags
+    # nothing of that kind serves Terminal 2: the mismatch answer stands
+    r = resolve_deterministic("lost property office in terminal 2", gaz)
+    assert r.matched_record_id == "lost_property_t1" and "terminal_mismatch" in r.flags
+    # an airport-level service is not retargeted, it serves the terminal itself
+    r = resolve_deterministic("taxi rank at terminal 2", gaz)
+    assert r.matched_record_id == "taxi_rank_t1" and "cross_terminal_service" in r.flags
+
+
+def test_two_word_aliases_match_in_either_order(gaz):
+    assert resolve_deterministic("security north", gaz).matched_record_id == "security_t1_north"
+    assert resolve_deterministic("north security", gaz).matched_record_id == "security_t1_north"
+    assert "security north" in gaz.alias_index and gaz.alias_index["security north"] == "security_t1_north"

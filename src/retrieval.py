@@ -152,6 +152,17 @@ def resolve_deterministic(query: str, gaz: Gazetteers) -> RetrievalResult:
     alias_targets = sorted({e.record_ids[0] for e in alias_hits if e.record_ids})
     if len(alias_targets) == 1:
         target = alias_targets[0]
+        if terminal_values and not any(gaz.serves(target, t) for t in terminal_values):
+            # the alias names a record in another terminal; when exactly one
+            # record of the same category serves the terminal asked about,
+            # that is the one the passenger means ("check-in hall in terminal 2")
+            same_kind = [rid for rid in gaz.records_in_category(gaz.records[target]["category"])
+                         if any(gaz.serves(rid, t) for t in terminal_values)]
+            if len(same_kind) == 1:
+                result.flags.append("terminal_retargeted")
+                return _decide(result, STAGE_ALIAS, "answer",
+                               f"alias '{alias_hits[0].surface}' retargeted to the {gaz.records[target]['category']} "
+                               f"record serving {', '.join(sorted(terminal_values))}", same_kind[0])
         if terminal_values and gaz.records[target]["terminal"] not in terminal_values:
             # the record sits in another terminal: either it serves the one
             # asked about (airport-level service) or it does not, and the

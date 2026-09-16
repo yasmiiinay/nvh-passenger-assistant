@@ -74,6 +74,18 @@ class Extraction:
         return out
 
 
+def reversed_two_word(phrases: set[str]) -> set[str]:
+    """"security north" for "north security": a two-word alias is read in
+    either order when both words are plain words. Passengers put the
+    qualifier after the head as often as before it (QA 04.4)."""
+    out = set()
+    for p in phrases:
+        words = p.split()
+        if len(words) == 2 and all(w.isalpha() and len(w) >= 2 for w in words):
+            out.add(f"{words[1]} {words[0]}")
+    return out
+
+
 class Gazetteers:
     """Lookup tables built once from the KB and vocabulary."""
 
@@ -108,7 +120,9 @@ class Gazetteers:
                 for p in normalised_phrases:
                     self.volatile_phrases[p] = rid
                 continue
-            for p in normalised_phrases:
+            for p in normalised_phrases | reversed_two_word(normalised_phrases):
+                if p in self.alias_index and self.alias_index[p] != rid:
+                    continue   # a reversed form must never take a phrase another record owns
                 self.alias_index[p] = rid
                 for token in p.split():
                     if token in CUE_EXCLUDED or len(token) < 2 or not token.isalpha():

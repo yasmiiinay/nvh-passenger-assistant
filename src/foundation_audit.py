@@ -108,10 +108,15 @@ def check_identifier_collisions(kb: dict) -> list[str]:
 
 
 def check_alias_conflicts(kb: dict) -> list[str]:
+    """Aliases, and the reversed order of two-word aliases that the
+    gazetteer also matches, must each belong to one record."""
     owner: dict[str, str] = {}
     problems = []
     for r in kb["records"]:
-        for alias in [a.lower().strip() for a in r["aliases"]]:
+        aliases = [a.lower().strip() for a in r["aliases"]]
+        reversed_forms = [" ".join(reversed(a.split())) for a in aliases
+                          if len(a.split()) == 2 and all(w.isalpha() and len(w) >= 2 for w in a.split())]
+        for alias in aliases + reversed_forms:
             if alias in owner and owner[alias] != r["record_id"]:
                 problems.append(f"alias '{alias}' claimed by both {owner[alias]} and {r['record_id']}")
             owner[alias] = r["record_id"]
