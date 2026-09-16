@@ -3,8 +3,9 @@
 16 September 2026. Working mode: TEST → DIAGNOSE → FIX GENERAL CAUSE →
 REGRESSION TEST → COMPARE. First item of Chat 04, taken from the manual
 interface observation recorded at the end of the 03.4 note. No threshold,
-band or conflict rule was changed; no model was touched. Status: EXECUTED in
-the workspace with all three models present; MacBook re-run outstanding.
+band or conflict rule was changed; no model was touched. Status: VERIFIED. Re-run on the MacBook on 17 September: every per-scenario,
+cascade and per-image row identical to the workspace run apart from latency
+(MacBook median 49 ms dev, 38 ms held-out, slowest turn 0.48 s).
 
 ## 1. Issue
 
@@ -129,5 +130,4 @@ expected route without a new answer being given anywhere; the passenger-facing
 text no longer names a third candidate in any clarify. The cost in §6 is
 recorded and routed to the twin-record pass.
 
-Interface screenshots of the new wording and the MacBook re-run are still to
-be taken.
+Interface screenshots of the new wording are still to be taken.
