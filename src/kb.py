@@ -31,6 +31,11 @@ def load_kb(path: str | Path) -> dict:
         kb = json.load(fh)
     for record in kb["records"]:
         record["_expanded_identifiers"] = expand_identifier_ranges(record)
+        # `terminal` says where a record is; `serves_terminals` says whose
+        # passengers it is for. Airport-level services (ground transport,
+        # flight boards, first aid) list both terminals; everything else
+        # serves only the terminal it sits in.
+        record.setdefault("serves_terminals", [record["terminal"]])
     return kb
 
 

@@ -1,2 +1,7 @@
-query_id,query,intent,entities_json,target_kb_id,query_type,expected_behaviour,split,notes
-qa001,an airport sign for baggage reclaim,find_baggage_reclaim,{},,vague,clarify,regression,typed in the interface on 16 Sep 2026 with the check-in suitcase pictogram; no terminal; two reclaim halls
+query_id,query,intent,entities_json,target_kb_id,query_type,expected_behaviour,split,notes,expected_flags
+qa001,an airport sign for baggage reclaim,find_baggage_reclaim,{},,vague,clarify,regression,typed in the interface on 16 Sep 2026 with the check-in suitcase pictogram; no terminal; two reclaim halls,
+qa002,Is there a shuttle bus from terminal 2?,find_transport,"{""terminal"": ""Terminal 2""}",shuttle_t1_t2,precise,answer,regression,"the h024 shape: a cross-terminal service asked about from Terminal 2; must answer the shuttle, never a grounded no",cross_terminal_service|!grounded_negative|!terminal_mismatch
+qa003,Does Terminal 2 have a lounge?,find_lounge,"{""terminal"": ""Terminal 2""}",lounge_aurora,precise,answer,regression,true grounded negative that must still fire: the lounge is Terminal 1 only by design,grounded_negative
+qa004,Where is the check-in hall in Terminal 2?,find_check_in,"{""terminal"": ""Terminal 2""}",checkin_t2,precise,answer,regression,terminal-specific service in the asked terminal; plain answer,!grounded_negative|!cross_terminal_service|!terminal_mismatch
+qa005,Is there a first aid room in Terminal 2?,request_accessibility_help,"{""terminal"": ""Terminal 2""}",first_aid_t1,precise,answer,regression,airport-level service located in Terminal 1 that serves both; answer with the cross-terminal sentence,cross_terminal_service|!grounded_negative|!terminal_mismatch
+qa006,How often does the shuttle run?,find_transport,{},shuttle_t1_t2,precise,answer,regression,no terminal in the text: the terminal rules must stay silent; the semantic stage decides between the transport records,!grounded_negative

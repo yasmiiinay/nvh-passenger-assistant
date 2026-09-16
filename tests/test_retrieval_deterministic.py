@@ -55,6 +55,36 @@ def test_grounded_negative_category_in_terminal(gaz):
     assert "grounded_negative" in r.flags and r.candidates == ["lounge_aurora"]
 
 
+def test_terminal_scope_separates_location_from_service(gaz):
+    # the shuttle sits in Terminal 1 but serves both; "no transport in
+    # Terminal 2" was the false grounded negative found on the held-out set
+    r = resolve_deterministic("How often does the shuttle to terminal 2 run?", gaz)
+    assert "grounded_negative" not in r.flags
+    assert "shuttle_t1_t2" in (r.candidates or r.handoff.get("candidates", []))
+    # a terminal-specific service still gives the grounded negative
+    r = resolve_deterministic("Does Terminal 2 have a lounge?", gaz)
+    assert "grounded_negative" in r.flags and r.candidates == ["lounge_aurora"]
+    # an airport-level service reached by alias says it serves the terminal asked about
+    r = resolve_deterministic("Is there a first aid room in Terminal 2?", gaz)
+    assert r.matched_record_id == "first_aid_t1" and "cross_terminal_service" in r.flags
+    assert "terminal_mismatch" not in r.flags
+    # a record that is genuinely elsewhere keeps the mismatch flag
+    r = resolve_deterministic("Is there lost property in terminal 2?", gaz)
+    assert "terminal_mismatch" in r.flags and "cross_terminal_service" not in r.flags
+
+
+def test_live_information_record_does_not_count_as_a_desk(gaz):
+    # the flight boards serve both terminals but only ever redirect; they must
+    # not stop "help desk in terminal 2" narrowing to the one Terminal 2 desk
+    r = resolve_deterministic("help desk in terminal 2", gaz)
+    assert r.decision == "answer" and r.matched_record_id == "info_desk_t2"
+
+
+def test_serves_terminals_defaults_to_the_record_terminal(gaz):
+    assert gaz.records["checkin_t2"]["serves_terminals"] == ["Terminal 2"]
+    assert gaz.serves("shuttle_t1_t2", "Terminal 2") and not gaz.serves("lounge_aurora", "Terminal 2")
+
+
 def test_conflicting_identifiers_surface_both(gaz):
     r = resolve_deterministic("is it gate B12 or C3?", gaz)
     assert r.decision == "clarify" and r.candidates == ["gates_pier_b", "gates_pier_c"]

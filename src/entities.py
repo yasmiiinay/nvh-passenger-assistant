@@ -133,6 +133,10 @@ class Gazetteers:
     def range_owner(self, prefix: str) -> list[tuple[str, int, int, str]]:
         return self.identifier_ranges.get(prefix.strip().upper(), [])
 
+    def serves(self, record_id: str, terminal: str) -> bool:
+        """Whether the record is for passengers of that terminal (see load_kb)."""
+        return terminal in self.records[record_id]["serves_terminals"]
+
     def cue_table_rows(self) -> list[dict]:
         return [{"token": t, "category": c} for t, c in sorted(self.category_cues.items())]
 

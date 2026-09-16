@@ -40,7 +40,7 @@ anywhere; EasyOCR is an optional, flag-gated enhancement.
 | `docs/` | Airport specification, dataset schemas, and project documents. |
 | `evaluation/` | Metric modules (pure functions now; model outputs plug in from the pipeline phase). |
 | `outputs/` | Everything generated (benchmarks, evaluation artefacts); git-ignored except `.gitkeep`. |
-| `scripts/` | Runnable utilities: `smoke_test.py`, `benchmark_env.py`, `audit_foundation.py`, `run_deterministic_seed.py` (checkpoint 03.1), `run_text_pipeline_seed.py` (checkpoint 03.2), `run_vision_eval.py` and `run_speech_eval.py` (checkpoint 03.3), `run_multimodal_eval.py` (checkpoint 03.4), and the dataset helpers `build_image_manifest.py`, `make_tts_audio.py`, `add_recordings.py`. |
+| `scripts/` | Runnable utilities: `smoke_test.py`, `benchmark_env.py`, `audit_foundation.py`, `run_deterministic_seed.py` (checkpoint 03.1), `run_text_pipeline_seed.py` (checkpoint 03.2), `run_vision_eval.py` and `run_speech_eval.py` (checkpoint 03.3), `run_multimodal_eval.py` (checkpoint 03.4), `run_text_regression.py` (Chat 04 QA text regression queries), and the dataset helpers `build_image_manifest.py`, `make_tts_audio.py`, `add_recordings.py`. |
 | `src/` | Pipeline code: `kb.py` (KB loading, identifier expansion), `foundation_audit.py`, `normalizer.py` (L1/L2 text normalisation), `entities.py` (regex + KB-derived gazetteers), `text_encoder.py` (MiniLM, loaded on first use), `intent.py` (intent by nearest exemplar), `retrieval.py` (the full text cascade: deterministic stages, then intent, category filter, cosine similarity and the score + margin decision), `responses.py` (template answers from record fields, with the caveat sentences each flag requires, and the multimodal renderings), `router.py` (the deterministic multimodal routing rules and conflict surfacing), `event_log.py` (JSONL event log and the escalation record), `vision.py` (image checks, CLIP zero-shot ranking against category prompts, KB records and out-of-scope anchors), `speech.py` (audio gate, Whisper-base transcription, hand-off of the transcript into the same text cascade). |
 | `models/` | Local model copies (git-ignored): `all-MiniLM-L6-v2/`, `clip-vit-base-patch32/`, `whisper-base/`. A local copy is used when present; otherwise the hub id from `configs/settings.py` is fetched on first use. |
 | `tests/` | Consistency gate plus unit tests per module (`python -m pytest tests`). |
@@ -117,6 +117,7 @@ python app/app.py                       # local interface at http://127.0.0.1:78
 python scripts/run_multimodal_eval.py --split dev        # 35 authored scenarios -> outputs/checkpoint_03_4/multimodal/dev/
 python scripts/run_multimodal_eval.py --split heldout    # 33 held-out scenarios, run once
 python scripts/run_multimodal_eval.py --split regression # scenarios written after interface defects (Chat 04 QA), reported separately
+python scripts/run_text_regression.py                     # text-only regression queries with expected flags (data/text/queries_qa.csv)
 python scripts/run_multimodal_eval.py --split dev --confirm-image-only   # conservative image-only variant
 ```
 

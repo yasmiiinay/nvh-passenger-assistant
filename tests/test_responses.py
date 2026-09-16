@@ -67,7 +67,9 @@ def test_grounded_negative_and_terminal_mismatch_wording(gaz):
     text = render(resolve_deterministic("Where is gate B21?", gaz), gaz)
     assert "outside the known range (B1 to B18)" in text and "boarding pass" in text
     text = render(resolve_deterministic("Is there parking at terminal 2?", gaz), gaz)
-    assert text.startswith("Car Park P1 is not at Terminal 2; it is at Terminal 1.")
+    assert text.startswith("Car Park P1 is in Terminal 1 and also serves Terminal 2.")
+    text = render(resolve_deterministic("Is there lost property in terminal 2?", gaz), gaz)
+    assert text.startswith("Lost Property Office is not at Terminal 2; it is at Terminal 1.")
 
 
 def test_action_and_live_status_guards():

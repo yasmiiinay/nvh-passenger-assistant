@@ -74,6 +74,22 @@ def check_categories(kb: dict, vocab: dict) -> list[str]:
             for r in kb["records"] if r["category"] not in valid]
 
 
+def check_terminal_scope(kb: dict, vocab: dict) -> list[str]:
+    """serves_terminals, when given, names known terminals and includes the
+    record's own; the loader fills the default for records without it."""
+    known = set(vocab["entities"]["terminal"]["values"])
+    problems = []
+    for r in kb["records"]:
+        scope = r.get("serves_terminals")
+        if scope is None:
+            continue
+        if not isinstance(scope, list) or not set(scope) <= known:
+            problems.append(f"{r['record_id']}: serves_terminals {scope!r} not a list of known terminals")
+        elif r["terminal"] not in scope:
+            problems.append(f"{r['record_id']}: serves_terminals does not include its own terminal")
+    return problems
+
+
 def check_volatility(kb: dict, vocab: dict) -> list[str]:
     valid = set(vocab["volatility_values"])
     return [f"{r['record_id']}: volatility '{r['volatility']}' invalid"
@@ -166,6 +182,7 @@ def run_all(kb_path, vocab_path, queries_path) -> dict[str, list[str]]:
         "related_refs": check_related_refs(kb),
         "categories": check_categories(kb, vocab),
         "volatility": check_volatility(kb, vocab),
+        "terminal_scope": check_terminal_scope(kb, vocab),
         "identifier_collisions": check_identifier_collisions(kb),
         "alias_conflicts": check_alias_conflicts(kb),
         "synthetic_provenance": check_synthetic_provenance(kb),

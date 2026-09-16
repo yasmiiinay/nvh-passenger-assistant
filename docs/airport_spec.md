@@ -48,6 +48,13 @@ pointer, which the response templates must be able to express.
 
 ## 4. Ground transport (landside, between the terminals)
 
+KB note: every record has a `terminal` (where it is). The services in this
+section, plus the flight boards and the first-aid room, also carry
+`serves_terminals: ["Terminal 1", "Terminal 2"]`, because a Terminal 2
+passenger uses them; the grounded-negative and terminal-narrowing rules read
+that field, not `terminal`. Records without it serve only their own terminal
+(the lounge and lost-property asymmetries above rely on this).
+
 - **Nordhaven Airport rail station** — below Terminal 1; PRM assistance point at the
   station entrance (per Regulation 1107/2006 recital 5, designated points belong at
   rail stations serving the airport — Evidence Pack §A8).

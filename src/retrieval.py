@@ -153,12 +153,16 @@ def resolve_deterministic(query: str, gaz: Gazetteers) -> RetrievalResult:
     if len(alias_targets) == 1:
         target = alias_targets[0]
         if terminal_values and gaz.records[target]["terminal"] not in terminal_values:
-            # the service exists, but not where the passenger asked; the
-            # response must say so rather than silently answer for Terminal 1
-            result.flags.append("terminal_mismatch")
+            # the record sits in another terminal: either it serves the one
+            # asked about (airport-level service) or it does not, and the
+            # response must say which rather than silently answer for Terminal 1
+            if any(gaz.serves(target, t) for t in terminal_values):
+                result.flags.append("cross_terminal_service")
+            else:
+                result.flags.append("terminal_mismatch")
         return _decide(result, STAGE_ALIAS, "answer", f"alias '{alias_hits[0].surface}'", target)
     if len(alias_targets) > 1:
-        narrowed = [rid for rid in alias_targets if gaz.records[rid]["terminal"] in terminal_values]
+        narrowed = [rid for rid in alias_targets if any(gaz.serves(rid, t) for t in terminal_values)]
         if len(narrowed) == 1:
             return _decide(result, STAGE_ALIAS, "answer",
                            f"{len(alias_targets)} alias matches narrowed by terminal", narrowed[0])
@@ -170,13 +174,20 @@ def resolve_deterministic(query: str, gaz: Gazetteers) -> RetrievalResult:
     hint_records: list[str] = []
     if len(cue_categories) == 1 and not alias_targets:
         category = cue_categories[0]
-        in_category = gaz.records_in_category(category)
+        # the live-information record only ever redirects, so it is not a
+        # place the cue can narrow to; leaving it in made a terminal look as
+        # if it had two information desks
+        in_category = [rid for rid in gaz.records_in_category(category)
+                       if gaz.records[rid].get("volatility") != "high"]
         cue_text = ", ".join(sorted({t for t, _ in ex.category_cues}))
         if terminal_values:
-            in_terminal = [rid for rid in in_category if gaz.records[rid]["terminal"] in terminal_values]
+            in_terminal = [rid for rid in in_category if any(gaz.serves(rid, t) for t in terminal_values)]
             if len(in_terminal) == 1:
+                target = in_terminal[0]
+                if gaz.records[target]["terminal"] not in terminal_values:
+                    result.flags.append("cross_terminal_service")
                 return _decide(result, STAGE_ALIAS, "answer",
-                               f"category cue '{cue_text}' + terminal narrows to one record", in_terminal[0])
+                               f"category cue '{cue_text}' + terminal narrows to one record", target)
             if not in_terminal and in_category:
                 result.flags.append("grounded_negative")
                 return _decide(result, STAGE_ALIAS, "answer",
@@ -254,7 +265,7 @@ def candidate_records(intent: str, handoff: dict, gaz: Gazetteers, filter_mode: 
     allowed = [rid for rid in gaz.records if gaz.records[rid]["category"] in categories]
     terminals = handoff.get("terminal") or []
     if terminals:
-        in_terminal = [rid for rid in allowed if gaz.records[rid]["terminal"] in terminals]
+        in_terminal = [rid for rid in allowed if any(gaz.serves(rid, t) for t in terminals)]
         allowed = in_terminal or allowed
     if allowed:
         return allowed, STAGE_CATEGORY

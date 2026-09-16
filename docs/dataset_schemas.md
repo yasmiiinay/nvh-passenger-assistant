@@ -43,8 +43,11 @@ sentences a speaker chose at recording time that are not in either text
 set (`s###` ids); they are declared there, with their expected outcome,
 before the clip is scored, and they are not used for text evaluation.
 `data/text/queries_qa.csv` (`qa###` ids, split `regression`) holds sentences
-typed into the interface during QA that exposed a defect; they feed the
-regression scenarios of the multimodal manifest only.
+typed into the interface during QA or written for a QA pass, with one extra
+optional column `expected_flags` (`|`-separated cascade flags that must be
+present, `!flag` for one that must be absent; blank = not asserted). They are
+run by `scripts/run_text_regression.py` and may be referenced from the
+multimodal manifest; they are never part of dev or held-out figures.
 
 ## 3. Audio dataset — data/audio/audio_manifest.csv
 

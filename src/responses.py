@@ -8,7 +8,9 @@ by the cascade decide which caveats are added:
   time_reference_no_clock   the passenger asked about "now" or a clock time;
                             hours are given, open/closed is never claimed
   grounded_negative         the KB says the thing does not exist there
-  terminal_mismatch         the service exists, but in the other terminal
+  terminal_mismatch         the service exists, but only in the other terminal
+  cross_terminal_service    the record sits in another terminal but serves the
+                            one asked about (airport-level service)
   assist_policy             assistance request answered with the nearest point
   action_request            the passenger asked us to do something (book,
                             reserve, print); we only give information
@@ -156,6 +158,8 @@ def render(result: RetrievalResult, gaz) -> str:
     record = gaz.records[result.matched_record_id]
     if "terminal_mismatch" in result.flags:
         lines.append(f"{record['name']} is not at {_asked_terminal(result)}; it is at {record['terminal']}.")
+    if "cross_terminal_service" in result.flags:
+        lines.append(f"{record['name']} is in {record['terminal']} and also serves {_asked_terminal(result)}.")
     if "assist_policy" in result.flags:
         lines.append("The nearest designated assistance point is:")
     lines.extend(_record_text(record, gaz))

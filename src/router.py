@@ -164,7 +164,7 @@ def narrow_by_text(record_ids: list[str], result: RetrievalResult | None, gaz) -
     narrowed = record_ids
     terminal = result.entities.get("terminal")
     if terminal:
-        in_terminal = [rid for rid in narrowed if gaz.records[rid]["terminal"] == terminal]
+        in_terminal = [rid for rid in narrowed if gaz.serves(rid, terminal)]
         narrowed = in_terminal or narrowed
     if result.decision == "clarify" and result.candidates:
         overlap = [rid for rid in narrowed if rid in result.candidates]
