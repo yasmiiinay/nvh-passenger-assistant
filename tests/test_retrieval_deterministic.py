@@ -77,7 +77,7 @@ def test_live_information_record_does_not_count_as_a_desk(gaz):
     # the flight boards serve both terminals but only ever redirect; they must
     # not stop "help desk in terminal 2" narrowing to the one Terminal 2 desk
     r = resolve_deterministic("help desk in terminal 2", gaz)
-    assert r.decision == "answer" and r.matched_record_id == "info_desk_t2"
+    assert not r.resolved and r.handoff["cue_single_record"] == "info_desk_t2"
 
 
 def test_serves_terminals_defaults_to_the_record_terminal(gaz):
@@ -92,14 +92,16 @@ def test_conflicting_identifiers_surface_both(gaz):
 
 def test_alias_and_terminal_narrowing(gaz):
     assert resolve_deterministic("lost and found", gaz).matched_record_id == "lost_property_t1"
-    r = resolve_deterministic("Check-in desks Terminal 2", gaz)
-    assert r.matched_record_id == "checkin_t2" and r.stage == "alias_lookup"
+    r = resolve_deterministic("Check-in desks Terminal 2", gaz)   # cue + terminal: one record, confirmed semantically
+    assert not r.resolved and r.handoff["cue_single_record"] == "checkin_t2"
     r = resolve_deterministic("Is there lost property in terminal 2?", gaz)
     assert r.matched_record_id == "lost_property_t1" and "terminal_mismatch" in r.flags
 
 
-def test_single_record_category_resolves(gaz):
-    assert resolve_deterministic("Is there a lounge?", gaz).matched_record_id == "lounge_aurora"
+def test_single_record_category_is_handed_over_not_answered(gaz):
+    # a cue narrows to the one lounge record; the semantic stage confirms it
+    r = resolve_deterministic("Is there a lounge?", gaz)
+    assert not r.resolved and r.handoff["cue_single_record"] == "lounge_aurora"
 
 
 def test_multi_record_category_does_not_resolve(gaz):

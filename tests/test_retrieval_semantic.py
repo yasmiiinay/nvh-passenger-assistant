@@ -162,3 +162,18 @@ def test_semantic_workload_wrong_record_answers_are_exactly_the_known_ones(gaz, 
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+def test_similarity_alone_does_not_answer_without_a_recognised_intent(gaz, index):
+    # "baby changing facilities" resembles a restroom record above tau_high
+    # but matches no intent well; the top record is offered, not asserted
+    r = resolve("Baby changing facilities?", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "clarify" and "intent_weak" in r.flags and len(r.candidates) == 1
+    # a single-record cue is confirmed by the semantic stage, not answered outright
+    r = resolve("Is there a lounge?", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "answer" and r.matched_record_id == "lounge_aurora" and r.match_score >= SETTINGS.tau_high
+    r = resolve("Check-in desks Terminal 2", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "answer" and r.matched_record_id == "checkin_t2"
+    # a confident intent keeps its semantic answer
+    r = resolve("my mother needs a wheelchair", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "answer" and r.matched_record_id == "prm_point_t1_entrance"

@@ -191,23 +191,21 @@ def resolve_deterministic(query: str, gaz: Gazetteers) -> RetrievalResult:
         in_category = [rid for rid in gaz.records_in_category(category)
                        if gaz.records[rid].get("volatility") != "high"]
         cue_text = ", ".join(sorted({t for t, _ in ex.category_cues}))
+        # A cue is one word that happens to occur only in one category's
+        # names ("room", "office"); it narrows, it does not answer. When it
+        # leaves a single record, that record is handed to the semantic stage
+        # on its own, which still asks for similarity above tau_high and a
+        # recognised intent before answering (QA 04.4: "baby changing room"
+        # was answered with the first-aid room, a garbled Turkish transcript
+        # with the lost-property office).
         if terminal_values:
             in_terminal = [rid for rid in in_category if any(gaz.serves(rid, t) for t in terminal_values)]
-            if len(in_terminal) == 1:
-                target = in_terminal[0]
-                if gaz.records[target]["terminal"] not in terminal_values:
-                    result.flags.append("cross_terminal_service")
-                return _decide(result, STAGE_ALIAS, "answer",
-                               f"category cue '{cue_text}' + terminal narrows to one record", target)
             if not in_terminal and in_category:
                 result.flags.append("grounded_negative")
                 return _decide(result, STAGE_ALIAS, "answer",
                                f"no '{category}' record in {', '.join(sorted(terminal_values))}; "
                                f"exists elsewhere", None, in_category)
             hint_records = in_terminal
-        elif len(in_category) == 1:
-            return _decide(result, STAGE_ALIAS, "answer",
-                           f"category cue '{cue_text}': single record in category", in_category[0])
         else:
             hint_records = in_category
 
@@ -219,6 +217,7 @@ def resolve_deterministic(query: str, gaz: Gazetteers) -> RetrievalResult:
 
     # ---- unresolved: hand on to the semantic stage ----
     result.handoff = {
+        "cue_single_record": hint_records[0] if len(hint_records) == 1 else None,
         "category_hints": cue_categories,
         "terminal": sorted(terminal_values),
         "candidates": result.candidates or hint_records,
@@ -267,6 +266,8 @@ def candidate_records(intent: str, handoff: dict, gaz: Gazetteers, filter_mode: 
     stage instead when present (the evaluated variant). "none" searches the
     whole KB. A terminal mentioned in the query narrows the set when that
     leaves anything. An empty set falls back to the whole KB."""
+    if handoff.get("cue_single_record"):
+        return [handoff["cue_single_record"]], STAGE_CATEGORY
     categories: list[str] = []
     if filter_mode == "intent" and intent != NO_INTENT:
         categories = gaz.vocabulary["intents"][intent]["compatible_categories"]
@@ -366,7 +367,19 @@ def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex,
         # and its contact instead of a follow-up question (vocabulary note)
         result.flags.append("assist_policy")
         decision = "answer"
+    if decision == "answer" and (result.intent == NO_INTENT or
+                                 (result.intent_score or 0.0) < thresholds.get("tau_intent_answer", 0.0)):
+        # the record is similar enough, but the words did not match any
+        # known intent well; a confident answer from similarity alone is how
+        # an out-of-scope request gets a wrong "here it is"
+        result.flags.append("intent_weak")
+        return _decide(result, stage, "clarify",
+                       f"top record {top_id} at {score:.2f} but intent {result.intent} ({result.intent_score}) "
+                       f"below tau_intent_answer; asking for confirmation", None, [top_id])
     if decision == "answer":
+        asked = result.entities.get("terminal")
+        if asked and gaz.records[top_id]["terminal"] != asked and gaz.serves(top_id, asked):
+            result.flags.append("cross_terminal_service")
         return _decide(result, stage, "answer", f"top record {top_id} at {score:.2f}, margin {margin:.2f}", top_id)
     if decision == "clarify":
         tied = tied_by_terminal(ranked, thresholds["margin_delta"], gaz)

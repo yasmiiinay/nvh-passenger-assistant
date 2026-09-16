@@ -42,6 +42,12 @@ class Settings:
     tau_low: float | None = 0.25        # abstain threshold on cosine similarity
     margin_delta: float | None = 0.10   # clarify when top1 - top2 is below this
     tau_intent: float | None = 0.30     # below this nearest-exemplar score the intent is "none"
+    # A semantic answer also needs the intent to be recognised with at least
+    # this nearest-exemplar score; below it the top record is offered for
+    # confirmation instead. Every correct dev semantic answer scores 0.61 or
+    # more on intent, so any value in (0.30, 0.61] leaves dev unchanged; 0.40
+    # is a round value inside that range, not a fitted one (QA 04.4).
+    tau_intent_answer: float | None = 0.40
     # vision bands: set on the 19 in-scope + 18 out-of-scope dev pictograms (checkpoint
     # 03.3). CLIP category scores sit in a narrow 0.24-0.37 band, so the margin carries
     # most of the decision; the scores are far lower than the text cosine scale.
@@ -73,7 +79,8 @@ class Settings:
 
     def thresholds(self) -> dict:
         values = {"tau_intent": self.tau_intent, "tau_high": self.tau_high,
-                  "tau_low": self.tau_low, "margin_delta": self.margin_delta}
+                  "tau_low": self.tau_low, "margin_delta": self.margin_delta,
+                  "tau_intent_answer": self.tau_intent_answer}
         missing = [k for k, v in values.items() if v is None]
         if missing:
             raise ValueError(f"thresholds not set on the dev split yet: {missing}")
