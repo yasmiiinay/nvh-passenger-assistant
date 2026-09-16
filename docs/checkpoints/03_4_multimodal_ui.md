@@ -366,3 +366,53 @@ the smoke-test Space from 02C shows the build path works.
   escalation record, event log without media or words.
 - Not started, by design: robustness tuning, second blind set, Space
   deployment (Chat 05), Whisper-small comparison, OCR, weighted fusion.
+
+# Post-checkpoint manual interface observation (16 September 2026)
+
+Recorded after closure; no code was changed and the checkpoint stays
+closed. The observation goes to Chat 04 Testing and QA as its first item.
+
+**What was seen.** In the interface on the MacBook, the typed question
+"an airport sign for baggage reclaim" together with the AIGA baggage
+check-in pictogram (a suitcase, img_005) produced the uncertain-band
+response "I am not sure what this sign shows; it may be baggage, transport,
+accessibility. Could you say what you are looking for?". Reproduced here:
+the text alone resolves through the alias to a clarify between the two
+baggage reclaim records (Terminal 1 or 2), which is the more useful
+question; the photo scored baggage first with transport and accessibility
+close behind, hence the uncertain band.
+
+**Two issues, both on the integration side.**
+
+1. Rule R3 let an uncertain photo lead over text that already had a
+   candidate path. The stated principle in §3 is that an uncertain photo
+   never overrides words; R3 honours it for answers but not for clarify
+   text, so the photo's uncertainty replaced the text's "which terminal?"
+   with a broader category question.
+2. The uncertainty response exposed too many low-value candidates: the
+   photo's full top-3, including categories a passenger looking at a
+   suitcase would not consider, and, on the text side, clarify candidates
+   well below the leading score (an "Aurora Lounge" entry beside the two
+   reclaim records).
+
+Neither changes the frozen numbers: the 68 scenarios contain no case of
+"uncertain photo plus text with candidates", which is why the run did not
+show it, and the decision policy (thresholds, bands, conflict rules) is not
+in question.
+
+**Planned QA work (Chat 04, first item).**
+
+- Render simplification using the existing margin rule: show the runner-up
+  only when it lies within `margin_delta` of the leader, never a third
+  candidate, for both photo categories and text candidates; three response
+  levels for the photo (strong: names the category; uncertain with a clear
+  leader: "most likely X, please confirm"; uncertain with no clear leader:
+  ask for a clearer photo or a description). No threshold changes.
+- R3 precedence review: when the photo is uncertain and the text has clarify
+  candidates, the text keeps the turn and the photo is noted as agreeing or
+  not.
+- Two regression scenarios covering uncertain photo plus text with
+  candidates (agreeing and disagreeing categories), added to the manifest
+  with expectations written before the run.
+- Before and after evaluation on dev and held-out, with any changed
+  verdicts listed.
