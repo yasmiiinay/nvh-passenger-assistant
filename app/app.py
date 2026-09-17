@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 import html
 import io
+import json
 import sys
 import time
 import traceback
@@ -54,6 +55,50 @@ TITLE = "Nordhaven Airport Assistant"
 SUBTITLE = "Ask about gates, baggage, transport and airport services."
 # formats the picker offers; HEIC is left out because the vision step cannot open it
 PHOTO_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
+# Dropping a photo on the composer hands the file to the photo button's own input, so it
+# follows exactly the same upload path as the picker (one code path, one type filter).
+DROP_SCRIPT = """
+<script>
+(() => {
+  const allowed = %s;
+  const composer = () => document.getElementById("composer");
+  const inside = (event) => composer() && composer().contains(event.target);
+  const hasFile = (event) => Array.from(event.dataTransfer?.types || []).includes("Files");
+  const hint = (text) => { const el = document.getElementById("drop-hint"); if (el) el.textContent = text; };
+  document.addEventListener("click", (event) => {
+    if (event.target.closest?.("#send, #photo-btn, #mic-btn")) hint("");
+  });
+  document.addEventListener("dragover", (event) => {
+    if (!hasFile(event) || !inside(event)) return;
+    event.preventDefault();
+    composer().classList.add("is-drop-target");
+  });
+  document.addEventListener("dragleave", (event) => {
+    if (composer() && !composer().contains(event.relatedTarget)) composer().classList.remove("is-drop-target");
+  });
+  document.addEventListener("drop", (event) => {
+    if (!hasFile(event) || !inside(event)) return;
+    event.preventDefault();
+    composer().classList.remove("is-drop-target");
+    const file = event.dataTransfer.files[0];
+    const name = (file?.name || "").toLowerCase();
+    if (!file || !allowed.some((ext) => name.endsWith(ext))) {
+      hint("That file type cannot be used. Please drop a JPEG, PNG or WebP photo.");
+      return;
+    }
+    // Gradio renders the upload button's hidden input next to it in the same row
+    const input = document.querySelector("#composer-row input[type=file]");
+    if (!input) { hint("Please use the photo button to add the picture."); return; }
+    hint("");
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+})();
+</script>
+"""
+
 SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven Assistant is not a live agent "
               "and does not show live flight status. Demonstration system for a fictional airport; "
               "all information is synthetic.")
@@ -523,6 +568,9 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
          overflow: visible !important; background: var(--bg) !important; border: 1px solid var(--rule) !important; }
 #voice .controls, #voice .audio-container, #voice .component-wrap, #voice .wrap { overflow: visible !important; min-height: 0; }
 #voice .icon-button-wrapper { display: none !important; }   /* "Record again" replaces the X */
+#composer.is-drop-target { outline: 2px dashed var(--ink); outline-offset: -6px; }
+#drop-hint { font-size: 13px; color: var(--accent-deep); }
+#drop-hint:empty { display: none; }
 #scope { font-size: 12.5px; color: var(--muted); margin: 2px 0 0 -12px; max-width: 80ch; }
 :focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px; }
 
@@ -544,7 +592,7 @@ def build_ui() -> gr.Blocks:
     theme = gr.themes.Base(primary_hue="red", neutral_hue="stone",
                            font=[gr.themes.GoogleFont("Archivo"), "system-ui", "sans-serif"]
                            ).set(body_background_fill="#f3f2f2", body_background_fill_dark="#f3f2f2")
-    with gr.Blocks(theme=theme, css=CSS, title=f"{AIRPORT} passenger assistant") as demo:
+    with gr.Blocks(theme=theme, css=CSS, head=DROP_SCRIPT % json.dumps(PHOTO_TYPES), title=f"{AIRPORT} passenger assistant") as demo:
         session = gr.State({})
         with gr.Column(elem_id="app"):
             with gr.Row(elem_id="header"):
@@ -583,7 +631,7 @@ def build_ui() -> gr.Blocks:
 
             with gr.Column(elem_id="composer"):
                 with gr.Row(elem_id="composer-row"):
-                    text_in = gr.Textbox(label="Your question", placeholder="Ask about your journey…", lines=1,
+                    text_in = gr.Textbox(label="Your question", placeholder="Ask about your journey, or drop a photo here…", lines=1,
                                          elem_id="question", scale=6)
                     # the upload button hands over the file untouched, so a transparent pictogram is
                     # never flattened; the picker offers only formats the vision step can open
@@ -599,6 +647,7 @@ def build_ui() -> gr.Blocks:
                         audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
                                             sources=["microphone", "upload"], elem_id="voice")
                         record_again = gr.Button("Record again", elem_id="record-again", visible=False)
+                gr.HTML('<div id="drop-hint" role="status" aria-live="polite"></div>', padding=False)
                 gr.HTML(f'<div id="scope">{SCOPE_NOTE}</div>')
 
         photo_path = gr.State(None)

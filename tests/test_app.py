@@ -199,3 +199,12 @@ def test_evidence_summary_lists_no_options_for_a_sign_that_cannot_be_read():
     assert "Options" not in labels
     out.flags = ["image_uncertain"]
     assert "Options" in [label for label, _ in ui.evidence_summary(out, Gaz())]
+
+
+def test_dropping_a_photo_uses_the_same_type_filter_as_the_picker():
+    import json
+    script = ui.DROP_SCRIPT % json.dumps(ui.PHOTO_TYPES)
+    assert json.dumps(ui.PHOTO_TYPES) in script
+    assert "#composer-row input[type=file]" in script      # hands the file to the photo button's own input
+    assert "JPEG, PNG or WebP" in script
+
