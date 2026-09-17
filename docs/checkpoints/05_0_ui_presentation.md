@@ -28,12 +28,13 @@ therefore still describes what this interface shows.
 
 ## What the page now does
 
-Session history. The page keeps earlier passenger/assistant turns on screen.
-This is a display list in Gradio session state; the router is called with
-the current text, photo and audio only, and nothing from earlier turns is
-appended to a request. "Clear conversation" empties the list. A note in the
-evidence panel says so ("Session history is shown for reference. Each
-request is processed independently."). A message that looks like a
+Session history. The page keeps earlier passenger/assistant turns on screen
+under a "Session history" bar. This is a display list in Gradio session
+state, not memory: the router is called with the current text, photo and
+audio only, and nothing from earlier turns is appended to a request. The
+bar and the evidence panel both say so ("Shown for reference only. The
+assistant keeps no memory of earlier turns: each request is processed on
+its own…"), and "Clear conversation" empties the list. A message that looks like a
 follow-up ("What about Terminal 2?") is processed on its own and will
 usually be a clarification or an abstention, which is the honest outcome
 for a system without dialogue state.
@@ -47,8 +48,13 @@ used only on "no reliable match" and always together with the words.
 
 Fact chips. Next to the status: which evidence the answer came from (the
 existing `ROUTE_LABELS`), and for a matched record its terminal and zone,
-stated opening hours and step-free flag, read from the knowledge-base
-record. These repeat facts already in the answer text in a scannable form.
+stated opening hours and step-free flag. Rule adopted for these: a chip may
+reformat information already stated in the answer text for the selected
+record, and must not introduce a claim that is absent from or inconsistent
+with the outcome. The three record chips are drawn from exactly the fields
+`src.responses._record_text` always prints (place line, hours line,
+accessibility line), and `test_fact_chips_only_restate_what_the_answer_text_says`
+checks every knowledge-base record against the rendered answer body.
 
 Quick replies. Up to three buttons appear after a clarification or a
 conflict. Each one is a pre-filled new request sent through the same
@@ -101,8 +107,9 @@ returns a dict). New checks: every status has words as well as a symbol;
 passenger text is HTML-escaped; quick replies are produced only for terminal
 clarifications, short candidate lists and text+photo conflicts; a second
 turn keeps the first on screen while the turn counter and history grow;
-the independence note is present in the evidence text. Full suite: 215
-passed (was 211; four new interface tests).
+the independence note is present in the evidence text; fact chips restate
+only what the answer body says for every record. Full suite: 216 passed
+(was 211; five new interface tests).
 
 ## Not done, deliberately
 

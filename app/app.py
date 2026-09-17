@@ -53,7 +53,8 @@ SUBTITLE = "Ask about gates, baggage, transport and airport services."
 SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven Assistant is not a live agent "
               "and does not show live flight status. Demonstration system for a fictional airport; "
               "all information is synthetic.")
-HISTORY_NOTE = "Session history is shown for reference. Each request is processed independently."
+HISTORY_NOTE = ("Shown for reference only. The assistant keeps no memory of earlier turns: each request is "
+                "processed on its own, from the text, photo and voice you send with it.")
 EXAMPLES = ["Where is gate B12?", "Where can I collect my baggage?", "How do I get to Terminal 2?",
             "What does this sign mean?"]
 QUICK_REPLY_SLOTS = 3
@@ -152,8 +153,11 @@ def status_chip(key: str) -> str:
 
 
 def fact_chips(outcome: Outcome, gaz) -> list[str]:
-    """Short facts next to the status: what the answer was based on, and the
-    place's terminal and hours when one record was matched."""
+    """Short facts next to the status. Rule: a chip may restate, in a shorter
+    form, only what the answer text already says about the selected record
+    (terminal and zone, opening hours, step-free access, all printed by
+    src.responses._record_text); it never adds a claim the answer does not
+    make. The test suite checks this against every knowledge-base record."""
     chips = [f'<span class="chip">From {html.escape(ROUTE_LABELS.get(outcome.route, outcome.route))}</span>']
     record = gaz.records.get(outcome.matched_record_id) if outcome.decision == "answer" else None
     if record:
@@ -322,9 +326,16 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 #header .brand { display: flex; align-items: center; gap: 16px; }
 #assist-toggle { min-height: 44px; flex: 0 0 auto !important; padding: 0 20px; background: transparent; border: 1px solid var(--rule); }
 #conversation-wrap { padding: 0 !important; }
-#conversation { padding: 8px var(--gutter) 16px; }
-#conversation .turn { display: flex; flex-direction: column; gap: 10px; padding: 22px 0; border-top: 1px solid var(--rule); }
-#conversation .turn:first-child { border-top: 0; }
+#conversation { padding: 4px var(--gutter) 8px; }
+#history-bar { padding: 16px var(--gutter) 0; align-items: center; justify-content: space-between; }
+#history-bar .block { padding: 0 !important; }
+#history-note { font-size: 13px; color: var(--muted); margin-top: 2px; }
+#conversation .turn { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; }
+#conversation .turn--user { padding: 12px 16px; margin-top: 16px; background: var(--surface);
+                            border-left: 2px solid var(--ink); }
+#conversation .turn--user:first-child { margin-top: 0; }
+#conversation .turn--assistant { padding: 16px 0 20px; margin-top: 8px; border-bottom: 1px solid var(--rule); }
+#conversation .turn--assistant:last-child { border-bottom: 0; }
 .role, .subrole, #examples-label { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .turn--assistant .role { color: var(--accent-deep); }
 .answer, .answer p { font-size: 16px; line-height: 1.55; max-width: 68ch; margin: 0; }
@@ -346,23 +357,29 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 #examples .row { justify-content: flex-start; }
 #examples .ex { min-height: 44px; flex: 0 0 auto !important; padding: 0 14px; background: var(--bg); border: 1px solid var(--rule); font-weight: 400; font-size: 15px; }
 #examples-hint { font-size: 14px; color: var(--muted); }
-#quick { padding: 0 var(--gutter) 12px; }
+#quick { padding: 0 var(--gutter) 16px; }
 #quick .row { justify-content: flex-start; }
 #quick button { min-height: 44px; flex: 0 0 auto !important; padding: 0 20px; border: 1px solid var(--rule); background: var(--bg); font-weight: 600; }
-#notice { padding: 0 var(--gutter); color: var(--accent-deep); font-size: 14px; }
-#evidence, #assistance { padding: 0 var(--gutter) 16px !important; border-top: 1px solid var(--rule) !important; }
-#assistance { padding-top: 16px !important; }
+#notice { padding: 8px var(--gutter); color: var(--accent-deep); font-size: 15px; }
+#evidence { margin: 0 var(--gutter) 16px !important; width: auto !important; background: var(--surface) !important;
+            border: 1px solid var(--rule) !important; padding: 0 16px 8px !important; }
+#evidence .prose { font-size: 14px; }
+#assistance { padding: 16px var(--gutter) 16px !important; border-top: 1px solid var(--rule) !important; }
 #assistance textarea { background: var(--bg); border: 1px solid var(--rule) !important; font-size: 16px; }
-#assistance button { flex: 0 0 auto !important; align-self: flex-start; min-height: 48px; padding: 0 20px;
+#assistance button { flex: 0 0 auto !important; width: auto !important; align-self: flex-start; min-height: 48px; padding: 0 20px;
                      background: var(--accent); color: var(--bg); font-weight: 800; border: 0; }
 #evidence .label-wrap span, #assistance .label-wrap span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 #composer { border-top: 2px solid var(--rule); background: var(--surface); padding: 18px var(--gutter) 22px; margin-top: 8px; }
 #composer textarea, #transcript textarea { min-height: 48px; font-size: 16px; background: var(--bg);
                     border: 1px solid var(--rule) !important; padding: 12px; }
 #composer label span, #transcript label span { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
-#send { background: var(--accent); color: var(--bg); font-weight: 800; border: 0; min-height: 48px; }
+#send { background: var(--accent); color: var(--bg); font-weight: 800; border: 0; min-height: 48px;
+        flex: 0 0 auto !important; padding: 0 24px; align-self: flex-end; }
 #send:hover { background: #dd2b0f; }
-#clear { background: transparent; border: 1px solid var(--rule); min-height: 48px; }
+#clear { background: transparent; border: 1px solid var(--rule); min-height: 40px; flex: 0 0 auto !important;
+         padding: 0 16px; font-weight: 600; font-size: 14px; }
+#attachments { align-items: stretch; }
+#attachments > .block { min-height: 220px; }
 #question, #transcript, #assistance .block, #examples .block, #notice { padding-left: 0 !important; padding-right: 0 !important; }
 #scope { font-size: 13px; color: var(--muted); margin-top: 8px; }
 #photo, #voice { background: var(--bg) !important; border: 1px solid var(--rule) !important; }
@@ -371,7 +388,8 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 @media (max-width: 760px) {
   .gradio-container { --gutter: 18px; }
   #header { flex-direction: column; align-items: flex-start; }
-  #composer .row, #quick .row, #examples .row { flex-direction: column; align-items: stretch; }
+  #composer .row, #quick .row, #examples .row, #history-bar { flex-direction: column; align-items: stretch; }
+  #send { align-self: stretch; }
 }
 """
 
@@ -394,15 +412,19 @@ def build_ui() -> gr.Blocks:
                 gr.HTML('<div id="examples-hint">You can also send a photo of a sign, or record your question. '
                         'Both work together with text.</div>')
 
+            with gr.Row(elem_id="history-bar", visible=False) as history_bar:
+                gr.HTML(f'<div class="role">Session history</div><div id="history-note">{HISTORY_NOTE}</div>')
+                clear = gr.Button("Clear conversation", elem_id="clear", scale=0, min_width=180)
             conversation = gr.HTML(conversation_html([]), elem_id="conversation-wrap")
-            notice = gr.HTML("", elem_id="notice")
-            with gr.Row(elem_id="quick"):
+            notice = gr.HTML("", elem_id="notice", visible=False)
+            with gr.Row(elem_id="quick", visible=False) as quick_row:
                 quick_buttons = [gr.Button("", visible=False) for _ in range(QUICK_REPLY_SLOTS)]
             transcript = gr.Textbox(label="You said — edit if this is wrong, then press Enter to ask again",
                                     visible=False, lines=1, elem_id="transcript")
-
-            with gr.Accordion("Evidence & details", open=False, elem_id="evidence"):
+            with gr.Accordion("Evidence & details for the last answer", open=False, elem_id="evidence",
+                              visible=False) as evidence_panel:
                 evidence = gr.Markdown(value=HISTORY_NOTE)
+
             with gr.Column(visible=False, elem_id="assistance") as assistance:
                 gr.HTML('<div class="role">Assistance request</div>')
                 gr.Markdown("If the answer did not help, leave a short note. A reference number is recorded "
@@ -413,31 +435,33 @@ def build_ui() -> gr.Blocks:
                 ticket_out = gr.Markdown(value="")
 
             with gr.Column(elem_id="composer"):
-                text_in = gr.Textbox(label="Your question", placeholder="Ask about your journey…", lines=1,
-                                     elem_id="question")
                 with gr.Row():
+                    text_in = gr.Textbox(label="Your question", placeholder="Ask about your journey…", lines=1,
+                                         elem_id="question", scale=6)
+                    send = gr.Button("Send →", elem_id="send", scale=0, min_width=140)
+                with gr.Row(elem_id="attachments"):
                     # image_mode=None keeps the file as uploaded: the default RGB conversion
                     # turns a transparent pictogram into a black square before it reaches us
                     image_in = gr.Image(label="Photo of a sign (optional)", type="filepath", sources=["upload"],
-                                        image_mode=None, height=140, elem_id="photo", scale=2)
+                                        image_mode=None, height=180, elem_id="photo")
                     audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
-                                        sources=["microphone", "upload"], elem_id="voice", scale=2)
-                    with gr.Column(scale=1, min_width=160):
-                        send = gr.Button("Send →", elem_id="send")
-                        clear = gr.Button("Clear conversation", elem_id="clear")
+                                        sources=["microphone", "upload"], elem_id="voice")
                 gr.HTML(f'<div id="scope">{SCOPE_NOTE}</div>')
 
-        turn_outputs = [conversation, examples, notice, *quick_buttons, transcript, evidence, session,
-                        text_in, image_in, audio_in]
+        turn_outputs = [conversation, examples, history_bar, notice, quick_row, *quick_buttons, transcript,
+                        evidence_panel, evidence, session, text_in, image_in, audio_in]
 
         def to_outputs(result: dict) -> list:
             quick = result["quick"]
             buttons = [gr.update(value=q["label"], visible=True) for q in quick]
             buttons += [gr.update(value="", visible=False)] * (QUICK_REPLY_SLOTS - len(buttons))
             heard = result["transcript"]
-            return [result["conversation"], gr.update(visible=not result["session"].get("history")),
-                    result["notice"], *buttons, gr.update(value=heard, visible=bool(heard)),
-                    result["evidence"] or HISTORY_NOTE, result["session"], "", None, None]
+            has_history = bool(result["session"].get("history"))
+            return [result["conversation"], gr.update(visible=not has_history), gr.update(visible=has_history),
+                    gr.update(value=result["notice"], visible=bool(result["notice"])),
+                    gr.update(visible=bool(quick)), *buttons, gr.update(value=heard, visible=bool(heard)),
+                    gr.update(visible=bool(result["evidence"])), result["evidence"] or HISTORY_NOTE,
+                    result["session"], "", None, None]
 
         def on_send(text, image_path, audio_path, session):
             return to_outputs(run_turn(text, image_path, audio_path, session))

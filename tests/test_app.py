@@ -57,6 +57,27 @@ def test_quick_replies_only_for_terminal_clarify_and_conflict():
     assert ui.quick_replies(Outcome(route="text_only", decision="answer"), Gaz(), "x", None) == []
 
 
+def test_fact_chips_only_restate_what_the_answer_text_says():
+    """A chip may shorten a fact from the selected record, never add one."""
+    from src.entities import load_gazetteers
+    from src.responses import _record_text
+    from configs.settings import SETTINGS
+    import re
+    gaz = load_gazetteers(SETTINGS.kb_path, SETTINGS.vocabulary_path)
+    for rid, record in gaz.records.items():
+        answer = " ".join(_record_text(record, gaz))
+        outcome = Outcome(route="text_only", decision="answer", matched_record_id=rid)
+        for chip in ui.fact_chips(outcome, gaz)[1:]:           # [0] names the evidence route, not a record fact
+            words = re.sub(r"<[^>]+>", "", chip)
+            if words.startswith("Open "):
+                assert words[5:].replace(" – ", "-") in answer, (rid, words)
+            elif words == "Step-free access":
+                assert "step-free access" in answer, rid
+            else:
+                for part in words.split(" · "):
+                    assert part in answer, (rid, part)
+
+
 @pytest.fixture(scope="module")
 def models_ready():
     try:
