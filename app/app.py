@@ -89,53 +89,63 @@ def get_context():
 # what the evidence panel shows
 # ---------------------------------------------------------------------------
 
-def evidence_markdown(outcome: Outcome, gaz) -> str:
-    lines = [f"**Decision:** {DECISION_LABELS.get(outcome.decision, outcome.decision)}",
-             f"**Evidence used:** {ROUTE_LABELS.get(outcome.route, outcome.route)}",
-             f"**Why:** {outcome.reason or 'see the answer'}"]
+SCORE_NOTE = ("Scores are cosine similarities: a retrieval distance on a 0–1 scale, not a probability of "
+              "correctness. For this system they sit between about 0.25 and 0.60, so 0.37 can be a strong match; "
+              "the status comes from the score together with the gap to the runner-up, not from the number alone.")
+
+
+def evidence_rows(outcome: Outcome, gaz) -> list[tuple[str, str]]:
+    """Label/value pairs for the evidence panel, all read from the outcome."""
+    rows = [("Decision", DECISION_LABELS.get(outcome.decision, outcome.decision)),
+            ("Evidence used", ROUTE_LABELS.get(outcome.route, outcome.route)),
+            ("Input modalities", ", ".join(outcome.modalities) or "none usable"),
+            ("Why", outcome.reason or "see the answer")]
     text = outcome.text
     if text is not None:
-        lines.append(f"**Understood as:** `{text.normalized}`")
+        rows.append(("Understood as", text.normalized))
         if text.entities:
-            lines.append("**Entities:** " + ", ".join(f"{k} = {v}" for k, v in text.entities.items()))
+            rows.append(("Entities", ", ".join(f"{k} = {v}" for k, v in text.entities.items())))
         if text.intent:
-            lines.append(f"**Intent:** {text.intent} (nearest example score {text.intent_score:.2f}: "
-                         f"\"{text.intent_exemplar}\")")
-        lines.append(f"**Retrieval stage:** {text.stage or 'none'}")
+            rows.append(("Detected intent", f"{text.intent} · nearest example {text.intent_score:.2f} "
+                                            f"(\"{text.intent_exemplar}\")"))
+        rows.append(("Retrieval stage", text.stage or "none"))
         if text.ranked:
-            lines.append("**Top records by similarity:** " +
-                         ", ".join(f"{gaz.records[rid]['name']} {score:.2f}" for rid, score in text.ranked))
+            rows.append(("Top records by similarity",
+                         ", ".join(f"{gaz.records[rid]['name']} {score:.2f}" for rid, score in text.ranked)))
     vision = outcome.vision
     if vision is not None:
-        lines.append("**Photo, top categories:** " +
-                     ", ".join(f"{c.replace('_', ' ')} {s:.2f}" for c, s in vision.category_ranking) +
-                     f" (margin {vision.category_margin:.3f})")
-        lines.append(f"**Photo, closest non-sign anchor:** {vision.best_anchor[0]} {vision.best_anchor[1]:.2f}")
+        rows.append(("Photo, top categories",
+                     ", ".join(f"{c.replace('_', ' ')} {s:.2f}" for c, s in vision.category_ranking)
+                     + f" · margin {vision.category_margin:.3f}"))
+        rows.append(("Photo, closest non-sign anchor", f"{vision.best_anchor[0]} {vision.best_anchor[1]:.2f}"))
         if vision.check.flags:
-            lines.append("**Photo quality flags:** " + ", ".join(vision.check.flags))
+            rows.append(("Photo quality flags", ", ".join(vision.check.flags)))
     speech = outcome.speech
     if speech is not None:
-        lines.append(f"**Audio:** {speech.check.seconds:.1f} s, {speech.check.rms_dbfs:.0f} dBFS, "
-                     f"{'accepted' if speech.check.ok else 'rejected: ' + str(speech.check.problem)}")
+        rows.append(("Audio", f"{speech.check.seconds:.1f} s · {speech.check.rms_dbfs:.0f} dBFS · "
+                              f"{'accepted' if speech.check.ok else 'rejected: ' + str(speech.check.problem)}"))
     if outcome.score is not None:
-        lines.append(f"**Match score:** {outcome.score:.2f}. This is a cosine similarity between your input and "
-                     "the record or category text: a retrieval distance, not a probability. Values for this "
-                     "system sit between about 0.25 and 0.60, so 0.37 can be a strong match; the status comes "
-                     "from the score together with the gap to the runner-up, not from the number alone.")
+        rows.append(("Similarity", f"{outcome.score:.2f} · {outcome.band or 'not banded'}"))
     if outcome.matched_record_id:
-        lines.append(f"**Matched record:** `{outcome.matched_record_id}`")
+        rows.append(("Matched record", outcome.matched_record_id))
         facts = [chip_text(c) for c in fact_chips(outcome, gaz)[1:]]
         if facts:
-            lines.append("**Record facts:** " + "; ".join(facts))
+            rows.append(("Record facts", "; ".join(facts)))
     if outcome.candidates:
-        lines.append("**Candidates:** " + ", ".join(gaz.records[r]["name"] for r in outcome.candidates if r in gaz.records))
+        rows.append(("Candidates", ", ".join(gaz.records[r]["name"] for r in outcome.candidates if r in gaz.records)))
     if outcome.conflict:
         d = outcome.conflict_detail
-        lines.append(f"**Conflict:** words point to {d.get('text_record') or ', '.join(d.get('text_categories', []))}; "
-                     f"photo points to {d.get('image_category')}; resolution: {d.get('resolution')}")
+        rows.append(("Conflict", f"words point to {d.get('text_record') or ', '.join(d.get('text_categories', []))}; "
+                                 f"photo points to {d.get('image_category')}; resolution: {d.get('resolution')}"))
     if outcome.flags:
-        lines.append("**Flags:** " + ", ".join(outcome.flags))
-    return "\n\n".join(lines)
+        rows.append(("Flags", ", ".join(outcome.flags)))
+    return rows
+
+
+def evidence_html(outcome: Outcome, gaz) -> str:
+    cells = "".join(f'<div class="ev-row"><dt>{html.escape(label)}</dt><dd>{html.escape(value)}</dd></div>'
+                    for label, value in evidence_rows(outcome, gaz))
+    return f'<dl class="ev-grid">{cells}</dl><p class="ev-note">{SCORE_NOTE}</p>'
 
 
 # ---------------------------------------------------------------------------
@@ -280,7 +290,7 @@ def run_turn(text, image_path, audio_path, session) -> dict:
     else:
         gaz = ctx.gaz
         log_event(event_from_outcome(outcome, session["session_id"], session["turn"], time.perf_counter() - start))
-        evidence = evidence_markdown(outcome, gaz)
+        evidence = evidence_html(outcome, gaz)
     key = status_key(outcome)
     chips = fact_chips(outcome, gaz) if gaz is not None else []
     transcript = ""
@@ -392,8 +402,14 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
             border-top: 1px solid var(--rule) !important; }
 #evidence .label-wrap { padding: 8px 0 !important; }
 #evidence .label-wrap span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-#evidence .prose { font-size: 13.5px; line-height: 1.5; color: #3a3737; padding-bottom: 8px; }
-#evidence .prose p { margin: 0 0 6px 0; }
+#evidence, #evidence * { overflow-x: visible !important; }
+#evidence .block { padding: 0 !important; }
+.ev-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 40px; row-gap: 0; margin: 4px 0 0 0; }
+.ev-row { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--rule); }
+.ev-row dt { font-weight: 800; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
+.ev-row dd { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; line-height: 1.45;
+             color: var(--ink); overflow-wrap: anywhere; }
+.ev-note { font-size: 12.5px; color: var(--muted); margin: 10px 0 8px; max-width: 80ch; }
 
 /* assistance */
 #assistance { padding: 16px var(--gutter-block) 18px !important; margin-top: 16px; border-top: 1px solid var(--rule) !important; }
@@ -433,6 +449,8 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
   #send { align-self: stretch; }
   .turn--user .bubble { max-width: 100%; }
   #attachments > .block, #photo, #voice { height: 140px !important; max-height: 140px !important; }
+  .ev-grid { grid-template-columns: 1fr; }
+  .ev-row { grid-template-columns: 1fr; gap: 2px; }
   #send { width: 100% !important; }
   #photo .upload-container, #photo .upload-container > button { max-height: 138px !important; }
 }
@@ -469,7 +487,7 @@ def build_ui() -> gr.Blocks:
                                     visible=False, lines=1, elem_id="transcript")
             with gr.Accordion("Evidence & details for the last answer", open=False, elem_id="evidence",
                               visible=False) as evidence_panel:
-                evidence = gr.Markdown(value="")
+                evidence = gr.HTML(value="", padding=False)
 
             with gr.Column(visible=False, elem_id="assistance") as assistance:
                 gr.HTML('<div class="role">Assistance request</div>')

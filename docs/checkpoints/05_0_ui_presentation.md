@@ -101,7 +101,13 @@ cover them. The no-memory sentence appears once, under the "Session
 history" heading. "Clear conversation" is a quiet underlined action in
 that bar; quick replies are compact equal-height outlined buttons;
 "Evidence & details for the last answer" is a collapsed, thin-ruled panel
-directly under the last turn. Page width is capped at 1100 px.
+directly under the last turn, laid out as a two-column label/value grid
+(decision, evidence used, input modalities, why, understood as, entities,
+detected intent, retrieval stage, top records, photo and audio checks,
+similarity with band, matched record, record facts, candidates, conflict,
+flags) with the retrieval-distance note underneath; the same values the
+Markdown version showed, read from the outcome. Page width is capped at
+1100 px.
 
 ## Accessibility checks kept from 03.4
 
