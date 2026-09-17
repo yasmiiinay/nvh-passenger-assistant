@@ -31,7 +31,13 @@ from src.retrieval import build_text_index
 from src.router import build_context, image_evidence, route
 from src.vision import analyse_image
 
-OUT_DIR = REPO_ROOT / "docs" / "report" / "final_blind_evaluation"
+# --set v2 reads the independently authored second set (final_blind_v2_*,
+# IMG2_/AUD2_ assets) and writes to final_blind_evaluation_v2; the default
+# is the first set, whose results stay as they were.
+SET = "v2" if "--set" in sys.argv and sys.argv[sys.argv.index("--set") + 1] == "v2" else "v1"
+OUT_DIR = REPO_ROOT / "docs" / "report" / ("final_blind_evaluation_v2" if SET == "v2" else "final_blind_evaluation")
+FILE_PREFIX = "final_blind_v2" if SET == "v2" else "final_blind"
+ASSET_PREFIX = {"img": "IMG2_B", "aud": "AUD2_B"} if SET == "v2" else {"img": "IMG_B", "aud": "AUD_B"}
 SAFE_DECISIONS = ("clarify", "abstain", "redirect", "conflict")
 
 ROUTE_EXPECTATION = {
@@ -122,7 +128,7 @@ def load_results() -> tuple[list[dict], list[dict], list[dict], list[dict]]:
                 if v in ("True", "False"):
                     r[k] = v == "True"
         return rows
-    return tuple(fix(read_csv(OUT_DIR / f"final_blind_{n}_results.csv")) for n in ("text", "image", "audio", "multimodal"))
+    return tuple(fix(read_csv(OUT_DIR / f"{FILE_PREFIX}_{n}_results.csv")) for n in ("text", "image", "audio", "multimodal"))
 
 
 def main() -> int:
@@ -132,14 +138,14 @@ def main() -> int:
     gaz = load_gazetteers(SETTINGS.kb_path, SETTINGS.vocabulary_path)
     ctx = None if summary_only else build_context(gaz, build_text_index(gaz, SETTINGS.intent_exemplars_path))
 
-    text_cases = read_csv(REPO_ROOT / "final_blind_text.csv")
-    image_cases = read_csv(REPO_ROOT / "final_blind_images_manifest.csv")
-    audio_cases = read_csv(REPO_ROOT / "final_blind_audio_manifest.csv")
-    mm_cases = read_csv(REPO_ROOT / "final_blind_multimodal.csv")
-    assets = {"text": "final_blind_text.csv", "images": "final_blind_images_manifest.csv",
-              "audio": "final_blind_audio_manifest.csv", "multimodal": "final_blind_multimodal.csv"}
-    hashes = {name: sha256(REPO_ROOT / name) for name in list(assets.values()) +
-              [f"IMG_B{i:02d}.png" for i in range(1, 9)] + [f"AUD_B{i:02d}.wav" for i in range(1, 7)]}
+    text_cases = read_csv(REPO_ROOT / f"{FILE_PREFIX}_text.csv")
+    image_cases = read_csv(REPO_ROOT / f"{FILE_PREFIX}_images_manifest.csv")
+    audio_cases = read_csv(REPO_ROOT / f"{FILE_PREFIX}_audio_manifest.csv")
+    mm_cases = read_csv(REPO_ROOT / f"{FILE_PREFIX}_multimodal.csv")
+    manifests = [f"{FILE_PREFIX}_text.csv", f"{FILE_PREFIX}_images_manifest.csv",
+                 f"{FILE_PREFIX}_audio_manifest.csv", f"{FILE_PREFIX}_multimodal.csv"]
+    hashes = {name: sha256(REPO_ROOT / name) for name in manifests +
+              [f"{ASSET_PREFIX['img']}{i:02d}.png" for i in range(1, 9)] + [f"{ASSET_PREFIX['aud']}{i:02d}.wav" for i in range(1, 7)]}
 
     if summary_only:
         text_rows, image_rows, audio_rows, mm_rows = load_results()
@@ -163,7 +169,7 @@ def main() -> int:
             "final_response": render_outcome(out, gaz).replace("\n", " // "),
         })
     if not summary_only:
-        write_csv(OUT_DIR / "final_blind_text_results.csv", text_rows)
+        write_csv(OUT_DIR / f"{FILE_PREFIX}_text_results.csv", text_rows)
 
     # ---- images ----
     image_rows = [] if not summary_only else image_rows
@@ -192,7 +198,7 @@ def main() -> int:
             "final_response": render_outcome(out, gaz).replace("\n", " // "),
         })
     if not summary_only:
-        write_csv(OUT_DIR / "final_blind_image_results.csv", image_rows)
+        write_csv(OUT_DIR / f"{FILE_PREFIX}_image_results.csv", image_rows)
 
     # ---- audio ----
     audio_rows = [] if not summary_only else audio_rows
@@ -220,7 +226,7 @@ def main() -> int:
             "final_response": render_outcome(out, gaz).replace("\n", " // "),
         })
     if not summary_only:
-        write_csv(OUT_DIR / "final_blind_audio_results.csv", audio_rows)
+        write_csv(OUT_DIR / f"{FILE_PREFIX}_audio_results.csv", audio_rows)
 
     # ---- multimodal ----
     mm_rows = [] if not summary_only else mm_rows
@@ -246,7 +252,7 @@ def main() -> int:
             "final_response": render_outcome(out, gaz).replace("\n", " // "),
         })
     if not summary_only:
-        write_csv(OUT_DIR / "final_blind_multimodal_results.csv", mm_rows)
+        write_csv(OUT_DIR / f"{FILE_PREFIX}_multimodal_results.csv", mm_rows)
 
     # ---- summary ----
     def counts(rows):
@@ -265,7 +271,7 @@ def main() -> int:
     oos = [r for r in image_rows if not r["expected_category"]]
     summary = {
         "commit": commit, "date": date.today().isoformat(),
-        "sizes": {"text": len(text_rows), "images": len(image_rows), "audio": len(audio_rows), "multimodal": len(mm_rows)},
+        "set": SET, "sizes": {"text": len(text_rows), "images": len(image_rows), "audio": len(audio_rows), "multimodal": len(mm_rows)},
         "asset_sha256": hashes,
         "thresholds": SETTINGS.thresholds() | (SETTINGS.vision_thresholds() or {}),
         "text": {
@@ -322,7 +328,7 @@ def main() -> int:
             },
         },
     }
-    (OUT_DIR / "final_blind_summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
+    (OUT_DIR / f"{FILE_PREFIX}_summary.json").write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     for name, rows in (("text", text_rows), ("images", image_rows), ("audio", audio_rows), ("multimodal", mm_rows)):
         print(f"== {name}")
         for r in rows:
