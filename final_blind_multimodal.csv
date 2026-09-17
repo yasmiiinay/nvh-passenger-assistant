@@ -1,0 +1,13 @@
+﻿scenario_id,modality,text,image_id,audio_id,expected_decision,expected_category,expected_record_id,expected_route,reason
+MM_B01,text+image,Are these the accessible toilets by Pier C?,IMG_B01,,answer,restroom,restrooms_t2,fuse_consistent,The text asks about accessible toilets at Pier C and the image depicts the Pier C restroom sign; both support the Terminal 2 restroom record.
+MM_B02,text+image,Does this sign take me down to the railway station?,IMG_B03,,answer,transport,rail_station,fuse_consistent,The text asks about the rail station and the photographed sign indicates the rail station.
+MM_B03,text+image,Desk 214 is mine — am I heading into the correct check-in area?,IMG_B05,,answer,check_in,checkin_t2,fuse_consistent,Desk 214 is within the Terminal 2 range 201–230 and the angled image shows that same check-in range.
+MM_B04,text+image,I need first aid. Is this the medical desk?,IMG_B04,,conflict,,,flag_cross_modal_conflict,"The text indicates medical/first aid, while the image depicts an arrivals information desk; the modalities point to different services."
+MM_B05,text+image,I'm trying to reach the C gates — is this the right sign?,IMG_B08,,conflict,,,flag_cross_modal_conflict,"The text indicates Pier C gates, while the image depicts a pharmacy sign, which is also outside the airport KB."
+MM_B06,text+image,What is this area for?,IMG_B07,,abstain,,,image_resolves_deictic,"The vague text depends on the image; the image depicts a smoking area, a service explicitly excluded from the KB."
+MM_B07,voice+image,,IMG_B03,AUD_B02,answer,transport,rail_station,fuse_consistent,The spoken request asks for the airport train station and the image is a rail-station wayfinding sign.
+MM_B08,voice+image,,IMG_B01,AUD_B04,answer,restroom,restrooms_t2,fuse_consistent,The voice specifies an accessible toilet in Terminal 2 and the image shows the Pier C accessible-restroom sign.
+MM_B09,voice+image,,IMG_B05,AUD_B03,conflict,,,flag_cross_modal_conflict,"The voice refers to gate A11 in Pier A, while the image shows Terminal 2 check-in desks 201–230."
+MM_B10,voice+image,,IMG_B02,AUD_B05,conflict,,,flag_cross_modal_conflict,"The voice asks for the sit-down restaurant, while the image depicts first aid beside Security North."
+MM_B11,image-only,,IMG_B06,,answer,gate,gates_pier_c,image_only,"Despite mild blur, the image's C7 identifier is readable and maps to Pier C gates C1–C10."
+MM_B12,voice-only,,,AUD_B06,answer,transport,bus_terminal,voice_only,"The mildly degraded voice asks about bus-terminal hours, which are stated in the KB as 05:00–00:30."

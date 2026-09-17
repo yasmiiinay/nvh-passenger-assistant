@@ -1,0 +1,7 @@
+﻿audio_id,spoken_text,expected_decision,expected_category,expected_record_id,audio_condition,reason
+AUD_B01,Is the arrivals information desk still open at ten tonight?,answer,information,info_desk_t1_arrivals,clean,"The Terminal 1 Arrivals information desk is open 05:00–23:00, so 22:00 is within its stated hours."
+AUD_B02,Which way is the airport train station from the terminal?,answer,transport,rail_station,clean,"The KB contains one airport rail station, below Terminal 1 on Level -1."
+AUD_B03,My boarding pass says gate A11. Which pier should I follow?,answer,gate,gates_pier_a,identifier,Gate A11 falls within Pier A gates A1–A12 in Terminal 1.
+AUD_B04,I'm in Terminal 2 and need an accessible toilet. Where is it?,answer,restroom,restrooms_t2,terminal_specific,"Terminal 2 has a restroom record covering Departures and Pier C, with an accessible toilet."
+AUD_B05,"I've checked in and just need somewhere to eat before boarding, where's the sit-down restaurant?",answer,restaurant,restaurant_skyline,fast_natural,"Skyline Restaurant is the airport's recorded sit-down restaurant, in Terminal 1 Airside Plaza."
+AUD_B06,Does the bus terminal stay open past midnight?,answer,transport,bus_terminal,mild_noise,"The Bus Terminal operates 05:00–00:30, so it remains open for the first 30 minutes after midnight."

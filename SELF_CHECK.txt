@@ -1,0 +1,21 @@
+Independent blind-set self-check
+
+- Image cases: 8 exactly (IMG_B01–IMG_B08).
+- Voice cases: 6 exactly (AUD_B01–AUD_B06).
+- Multimodal scenarios: 12 exactly (MM_B01–MM_B12).
+- Multimodal distribution:
+  * 3 text + image consistent
+  * 2 text + image conflicting
+  * 1 vague/deictic text + image
+  * 2 voice + image consistent
+  * 2 voice + image conflicting
+  * 1 image-only difficult/low-quality
+  * 1 voice-only difficult/low-quality
+- No chatbot outputs, thresholds, weaknesses, or QA results were used.
+- Expected labels were defined in the manifests before image asset generation.
+- No unsupported service is assigned a KB record as an answer.
+- Ambiguous/deictic out-of-scope smoking case is abstain, not forced to an answer.
+- Conflict scenarios contain genuine semantic disagreement between modalities.
+- No model-specific vocabulary appears in the passenger examples or image content.
+- No real passenger, airline logo, boarding-pass image, QR code, booking detail, or personal data is present.
+- Image assets are newly generated synthetic files for this blind set.
