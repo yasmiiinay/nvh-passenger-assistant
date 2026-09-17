@@ -27,6 +27,19 @@ semantic → full semantic → answer/clarify/abstain/redirect) · template
 responses grounded in KB records · Gradio Blocks UI. No generative model
 anywhere; EasyOCR is an optional, flag-gated enhancement.
 
+## Supported visual scope (v1.1, stated after Blind Evaluation v1)
+
+The photo path recognises the **kind** of airport sign in an image: its
+category (restroom, security, transport, …) from CLIP similarity to the
+category prompts, with out-of-scope anchors and a similarity band. It does
+**not** read text: desk numbers, gate identifiers, terminal names or any
+text-only sign content are invisible to it, because EasyOCR is a gated
+enhancement that is switched off (`enable_ocr = False`). A photo of a "C7"
+gate marker is therefore a gate-category sign at best, never gate C7.
+Blind Evaluation v1 (`docs/report/final_blind_evaluation/`) contained
+several text-dependent image cases; their results are kept unchanged, and
+this paragraph records the scope they exposed rather than moving them.
+
 ## Repository layout
 
 | Path | Responsibility (one sentence) |

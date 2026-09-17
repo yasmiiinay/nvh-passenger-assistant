@@ -217,7 +217,11 @@ def resolve_deterministic(query: str, gaz: Gazetteers) -> RetrievalResult:
 
     # ---- unresolved: hand on to the semantic stage ----
     result.handoff = {
-        "cue_single_record": hint_records[0] if len(hint_records) == 1 else None,
+        # a cue that narrows one category to one or a few records (QA 04.4,
+        # widened in 04.5): scored on their own when the intent agrees, together
+        # with the intent's categories when it does not, so that neither
+        # evidence overrides the other
+        "cue_records": list(hint_records) if 0 < len(hint_records) <= CUE_SET_MAX else [],
         "category_hints": cue_categories,
         "terminal": sorted(terminal_values),
         "candidates": result.candidates or hint_records,
@@ -266,14 +270,19 @@ def candidate_records(intent: str, handoff: dict, gaz: Gazetteers, filter_mode: 
     stage instead when present (the evaluated variant). "none" searches the
     whole KB. A terminal mentioned in the query narrows the set when that
     leaves anything. An empty set falls back to the whole KB."""
-    if handoff.get("cue_single_record"):
-        return [handoff["cue_single_record"]], STAGE_CATEGORY
     categories: list[str] = []
     if filter_mode == "intent" and intent != NO_INTENT:
         categories = gaz.vocabulary["intents"][intent]["compatible_categories"]
     elif filter_mode == "cues":
         categories = handoff.get("category_hints") or (
             gaz.vocabulary["intents"][intent]["compatible_categories"] if intent != NO_INTENT else [])
+    cue_records = handoff.get("cue_records") or []
+    if cue_records:
+        cue_category = gaz.records[cue_records[0]]["category"]
+        if intent == NO_INTENT or cue_category in categories:
+            return cue_records, STAGE_CATEGORY
+        allowed = cue_records + [rid for rid in gaz.records if gaz.records[rid]["category"] in categories]
+        return allowed, STAGE_CATEGORY
     allowed = [rid for rid in gaz.records if gaz.records[rid]["category"] in categories]
     terminals = handoff.get("terminal") or []
     if terminals:
@@ -330,6 +339,8 @@ def tied_by_terminal(ranked: list[tuple[str, float]], margin_delta: float, gaz: 
 # code or a volatile phrase; "when do the first and last trains run" must
 # not be sent to the flight boards because it resembles "when does boarding
 # begin" (QA 04.5).
+CUE_SET_MAX = 3   # a cue narrowing to more records than this is a category hint, not a candidate set
+
 FLIGHT_CONTEXT_WORDS = {"flight", "flights", "plane", "boarding", "delayed", "delay", "cancelled", "departing"}
 
 

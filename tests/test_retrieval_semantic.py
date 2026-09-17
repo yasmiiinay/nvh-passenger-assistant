@@ -205,3 +205,29 @@ def test_flight_context_words():
     assert has_flight_context(r)
     r = RetrievalResult(query="", normalized="", entities={"flight_ref": "NH 123"}, resolved=False)
     assert has_flight_context(r)
+
+
+# ---- QA 04.5 change 3: a small coherent cue set is kept as the candidate set ----
+
+def test_small_cue_set_is_scored_on_its_own_when_the_intent_agrees(gaz, index):
+    r = resolve("Which way to the security checkpoints in Terminal 1?", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "clarify" and set(r.candidates) == {"security_t1_north", "security_t1_south"}
+    assert r.clarification_field is None      # both in one terminal: the two names are listed
+
+
+def test_small_cue_set_across_terminals_still_asks_for_the_terminal(gaz, index):
+    r = resolve("how do I get to security", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "clarify" and r.clarification_field == "terminal"
+
+
+def test_cue_set_and_disagreeing_intent_are_searched_together(gaz):
+    handoff = {"cue_records": ["info_desk_t2"], "category_hints": ["information"], "terminal": ["Terminal 2"]}
+    allowed, stage = candidate_records("find_check_in", handoff, gaz, "intent")
+    assert "info_desk_t2" in allowed and "checkin_t2" in allowed and stage == STAGE_CATEGORY
+    allowed, _ = candidate_records("find_information", handoff, gaz, "intent")
+    assert allowed == ["info_desk_t2"]
+
+
+def test_large_cue_sets_stay_category_hints(gaz):
+    r = resolve_deterministic("how do I get to the transport options", gaz)
+    assert r.handoff.get("cue_records") == []   # five transport records: a hint, not a candidate set
