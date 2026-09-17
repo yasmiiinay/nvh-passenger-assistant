@@ -1,0 +1,21 @@
+blind_id,query,expected_decision,expected_category,expected_record_id,reason
+B001,I'm at B17 — which terminal is that and where do I head?,answer,gate,gates_pier_b,B17 is within Pier B gates B1–B18 in Terminal 1.
+B002,My check-in desk says 225. Where is that?,answer,check_in,checkin_t2,Desk 225 is within the Terminal 2 check-in range 201–230.
+B003,Security in Terminal 1 — which way?,clarify,security,,"Terminal 1 has both Security North and Security South, so one reliable checkpoint cannot be selected from the request alone."
+B004,Is Security South still open at 8:30 tonight?,answer,security,security_t1_south,"Security South is open from 04:30 to 21:00, so 20:30 is within its stated hours."
+B005,I’ve just landed — which baggage reclaim area should I head to?,clarify,baggage,,"Baggage reclaim exists in both Terminal 1 and Terminal 2, and no terminal or belt number is given."
+B006,I left my headphones somewhere. Is lost property open Sunday at 8 in the morning?,answer,lost_property,lost_property_t1,"Lost Property is open 09:00–17:00 on weekends, so it is closed at 08:00 on Sunday."
+B007,Just arrived in T1 and need a coffee before heading out. Anywhere nearby?,answer,restaurant,cafe_harbour,Harbour Café is landside in Terminal 1 Arrivals on Level 0.
+B008,Bagajımı nereden teslim alabilirim?,abstain,,,"The prototype is English-only, so the Turkish request should not be confidently mapped to a KB record."
+B009,Bathroom in Terminal 2?,answer,restroom,restrooms_t2,Terminal 2 has a restroom record covering Departures and Pier C.
+B010,I need special assistance — where should I go?,clarify,accessibility,,"Four PRM assistance points exist at different airport locations, so the passenger's location is needed to choose one reliably."
+B011,I've cleared security in Terminal 1 and want a proper sit-down meal. What's available?,answer,restaurant,restaurant_skyline,Skyline Restaurant is the recorded sit-down restaurant in Terminal 1 Airside Plaza.
+B012,I'm feeling faint near Security North. Where's first aid?,answer,medical,first_aid_t1,The First Aid Room is beside Security North in Terminal 1 Departures.
+B013,I'm in T2 and need a taxi — where do I go?,answer,transport,taxi_rank_t1,The airport taxi rank is on the Terminal 1 forecourt; Terminal 2 passengers are directed toward the Terminal 1 rank.
+B014,When do the first and last airport trains run?,answer,transport,rail_station,The rail station's first-to-last train period is 04:30–00:45.
+B015,Can I get from Terminal 1 to Terminal 2 around midnight?,answer,transport,shuttle_t1_t2,"The terminal shuttle operates 04:00–01:00, so midnight is within its stated operating period."
+B016,Has flight NV402 landed yet?,redirect,information,,Current arrival status is volatile live flight information and must come from airport boards or the operating airline.
+B017,The departure time for NV402 seems to have changed — what's the latest time?,redirect,information,,Current departure times and delays are live information and should be checked through official sources rather than the static KB.
+B018,Please reserve me a space in P1 for tonight.,abstain,transport,,The KB describes Car Park P1 but does not support making parking reservations.
+B019,Is there a pharmacy after security?,abstain,,,Pharmacies are explicitly excluded from the airport specification and KB.
+B020,Is there an airport hotel I can walk to from Terminal 1?,abstain,,,Hotels are explicitly excluded from the airport specification and KB.
