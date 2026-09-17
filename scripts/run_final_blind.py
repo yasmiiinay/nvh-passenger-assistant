@@ -31,13 +31,16 @@ from src.retrieval import build_text_index
 from src.router import build_context, image_evidence, route
 from src.vision import analyse_image
 
-# --set v2 reads the independently authored second set (final_blind_v2_*,
-# IMG2_/AUD2_ assets) and writes to final_blind_evaluation_v2; the default
-# is the first set, whose results stay as they were.
-SET = "v2" if "--set" in sys.argv and sys.argv[sys.argv.index("--set") + 1] == "v2" else "v1"
-OUT_DIR = REPO_ROOT / "docs" / "report" / ("final_blind_evaluation_v2" if SET == "v2" else "final_blind_evaluation")
-FILE_PREFIX = "final_blind_v2" if SET == "v2" else "final_blind"
-ASSET_PREFIX = {"img": "IMG2_B", "aud": "AUD2_B"} if SET == "v2" else {"img": "IMG_B", "aud": "AUD_B"}
+# --set v2 / v3 reads an independently authored later set (final_blind_v2_* with
+# IMG2_/AUD2_ assets, final_blind_v3_* with IMG3_/AUD3_ assets) and writes to its
+# own report folder; the default is the first set, whose results stay as they were.
+SET = sys.argv[sys.argv.index("--set") + 1] if "--set" in sys.argv else "v1"
+if SET not in ("v1", "v2", "v3"):
+    raise SystemExit(f"unknown blind set {SET!r}")
+OUT_DIR = REPO_ROOT / "docs" / "report" / ("final_blind_evaluation" if SET == "v1" else f"final_blind_evaluation_{SET}")
+FILE_PREFIX = "final_blind" if SET == "v1" else f"final_blind_{SET}"
+ASSET_PREFIX = ({"img": "IMG_B", "aud": "AUD_B"} if SET == "v1"
+                else {"img": f"IMG{SET[1]}_B", "aud": f"AUD{SET[1]}_B"})
 SAFE_DECISIONS = ("clarify", "abstain", "redirect", "conflict")
 
 ROUTE_EXPECTATION = {
