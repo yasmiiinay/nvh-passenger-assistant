@@ -1,14 +1,24 @@
 """Nordhaven International passenger assistant: the Gradio interface.
 
-One callback, `answer`, takes whatever the passenger supplied (typed text, a
-photo, a voice clip), routes it through src.router and renders the
-outcome. Models are loaded on the first question, not at import, so the
-Space starts quickly and a modality that is never used is never loaded.
+One callback, `run_turn`, takes whatever the passenger supplied (typed text, a
+photo, a voice clip), routes it through src.router and renders the outcome.
+Models are loaded on the first question, not at import, so the Space starts
+quickly and a modality that is never used is never loaded.
+
+The page shows the session as a conversation, but every request is processed
+on its own: the router only ever sees the current text, photo and audio.
+Earlier turns stay on screen for reference and are never appended to a new
+request. Quick-reply buttons are a convenience that fill in a new request
+(for example "security in Terminal 1") and send it through the same path as
+a typed one.
 
 Run locally:  python app/app.py
 """
 from __future__ import annotations
 
+import base64
+import html
+import io
 import sys
 import time
 import traceback
@@ -19,7 +29,7 @@ import gradio as gr
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from configs.settings import SETTINGS
 from src.entities import load_gazetteers
-from src.event_log import contact_route, event_from_outcome, log_event, new_session_id, open_ticket
+from src.event_log import event_from_outcome, log_event, new_session_id, open_ticket
 from src.responses import render_outcome
 from src.retrieval import RetrievalResult, build_text_index
 from src.router import Outcome, build_context, route
@@ -38,8 +48,24 @@ def zerogpu_probe() -> str:
 
 
 AIRPORT = "Nordhaven International (NVH)"
-BAND_LABELS = {"strong match": "Strong match", "uncertain": "Uncertain, please confirm",
-               "no reliable match": "No reliable match"}
+TITLE = "Nordhaven Airport Assistant"
+SUBTITLE = "Ask about gates, baggage, transport and airport services."
+SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven Assistant is not a live agent "
+              "and does not show live flight status. Demonstration system for a fictional airport; "
+              "all information is synthetic.")
+HISTORY_NOTE = "Session history is shown for reference. Each request is processed independently."
+EXAMPLES = ["Where is gate B12?", "Where can I collect my baggage?", "How do I get to Terminal 2?",
+            "What does this sign mean?"]
+QUICK_REPLY_SLOTS = 3
+
+# every status carries a symbol and words, so colour is never the only signal
+STATUS = {"strong match": ("&#10003;", "Strong match", "chip--ok"),
+          "uncertain": ("?", "Uncertain, please confirm", "chip--ask"),
+          "no reliable match": ("!", "No reliable match", "chip--none"),
+          "redirect": ("&#9432;", "Official information", "chip--info"),
+          "conflict": ("&#8644;", "Inputs disagree", "chip--ask"),
+          "clarify": ("?", "Question back to you", "chip--ask"),
+          "error": ("!", "Could not read the input", "chip--none")}
 ROUTE_LABELS = {"text_only": "your words", "voice_only": "your voice", "image_only": "your photo",
                 "text_leads": "your words, photo checked", "voice_leads": "your voice, photo checked",
                 "image_leads": "your photo, words used to narrow down", "none": "nothing usable"}
@@ -91,9 +117,9 @@ def evidence_markdown(outcome: Outcome, gaz) -> str:
                      f"{'accepted' if speech.check.ok else 'rejected: ' + str(speech.check.problem)}")
     if outcome.score is not None:
         lines.append(f"**Match score:** {outcome.score:.2f}. This is a cosine similarity between your input and "
-                     "the record or category text. Values for this system sit between about 0.25 and 0.60, "
-                     "so 0.37 can be a strong match; the band comes from the score together with the gap "
-                     "to the runner-up, not from the number alone.")
+                     "the record or category text: a retrieval distance, not a probability. Values for this "
+                     "system sit between about 0.25 and 0.60, so 0.37 can be a strong match; the status comes "
+                     "from the score together with the gap to the runner-up, not from the number alone.")
     if outcome.matched_record_id:
         lines.append(f"**Matched record:** `{outcome.matched_record_id}`")
     if outcome.candidates:
@@ -104,31 +130,126 @@ def evidence_markdown(outcome: Outcome, gaz) -> str:
                      f"photo points to {d.get('image_category')}; resolution: {d.get('resolution')}")
     if outcome.flags:
         lines.append("**Flags:** " + ", ".join(outcome.flags))
-    lines.append("Scores are cosine similarities: a measure of closeness, not a probability that the answer is right.")
+    lines.append(HISTORY_NOTE)
     return "\n\n".join(lines)
 
 
-def band_text(outcome: Outcome) -> str:
-    if outcome.decision == "redirect":
-        return "Referred to the official source"
-    if outcome.decision == "conflict":
-        return "Inputs disagree, please choose"
-    return BAND_LABELS.get(outcome.band or "", "Not scored")
+# ---------------------------------------------------------------------------
+# how one turn is shown
+# ---------------------------------------------------------------------------
+
+def status_key(outcome: Outcome) -> str:
+    if outcome.route == "none":
+        return "error"
+    if outcome.decision in ("redirect", "conflict", "clarify"):
+        return outcome.decision
+    return outcome.band or "no reliable match"
+
+
+def status_chip(key: str) -> str:
+    symbol, words, cls = STATUS[key]
+    return f'<span class="chip {cls}"><span aria-hidden="true">{symbol}</span> {words}</span>'
+
+
+def fact_chips(outcome: Outcome, gaz) -> list[str]:
+    """Short facts next to the status: what the answer was based on, and the
+    place's terminal and hours when one record was matched."""
+    chips = [f'<span class="chip">From {html.escape(ROUTE_LABELS.get(outcome.route, outcome.route))}</span>']
+    record = gaz.records.get(outcome.matched_record_id) if outcome.decision == "answer" else None
+    if record:
+        place = " · ".join(p for p in (record.get("terminal"), record.get("zone")) if p)
+        if place:
+            chips.append(f'<span class="chip">{html.escape(place)}</span>')
+        hours = (record.get("opening_hours") or {}).get("mon_sun")
+        if hours:
+            chips.append(f'<span class="chip">Open {html.escape(hours.replace("-", " – "))}</span>')
+        if (record.get("accessibility") or {}).get("step_free"):
+            chips.append('<span class="chip">Step-free access</span>')
+    return chips
+
+
+def quick_replies(outcome: Outcome, gaz, text: str | None, image_path: str | None) -> list[dict]:
+    """Buttons that build the next request for the passenger. Each one is a
+    fresh request through the same pipeline; nothing is remembered."""
+    if outcome.decision == "clarify" and outcome.clarification_field == "terminal" and outcome.text is not None:
+        category = gaz.records[outcome.candidates[0]]["category"].replace("_", "-")
+        terminals = sorted({gaz.records[rid]["terminal"] for rid in outcome.candidates})
+        return [{"label": t, "text": f"{category} in {t}"} for t in terminals]
+    if (outcome.decision == "clarify" and outcome.text is not None and "deictic" not in outcome.flags
+            and 0 < len(outcome.candidates) <= QUICK_REPLY_SLOTS):
+        names = [gaz.records[rid]["name"] for rid in outcome.candidates]
+        return [{"label": (f"Yes, {n}" if len(names) == 1 else n), "text": n} for n in names]
+    if outcome.decision == "conflict" and text and image_path:
+        return [{"label": "Use my question", "text": text},
+                {"label": "Use the photo", "image": image_path}]
+    return []
+
+
+def thumbnail(image_path: str, box: int = 112) -> str | None:
+    """A small inline copy of the uploaded photo for the transcript; None when
+    the file is not an image the interface can show."""
+    try:
+        from PIL import Image
+        with Image.open(image_path) as im:
+            im.thumbnail((box, box))
+            buffer = io.BytesIO()
+            im.convert("RGBA").save(buffer, format="PNG")
+    except Exception:
+        return None
+    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+
+
+def passenger_html(text: str | None, image_path: str | None, transcript: str | None, audio: bool) -> str:
+    parts = ['<div class="turn turn--user">']
+    parts.append('<div class="role">Passenger' + (' · voice' if audio else '') + '</div>')
+    if image_path:
+        thumb = thumbnail(image_path)
+        parts.append(f'<img class="thumb" src="{thumb}" alt="Photo you attached">' if thumb
+                     else '<div class="chip chip--media">Photo attached</div>')
+    if audio:
+        parts.append('<div class="chip chip--media">Voice recording</div>')
+        if transcript:
+            parts.append(f'<div class="subrole">Heard as</div><div class="answer">{html.escape(transcript)}</div>')
+    if text:
+        parts.append(f'<div class="answer">{html.escape(text)}</div>')
+    if not text and not audio and image_path:
+        parts.append('<div class="answer muted">Sent without a question</div>')
+    parts.append('</div>')
+    return "".join(parts)
+
+
+def assistant_html(response: str, key: str, chips: list[str]) -> str:
+    paragraphs = "".join(f"<p>{html.escape(p)}</p>" for p in response.split("\n") if p.strip())
+    if key == "redirect":
+        body = (f'<div class="official"><div class="role">Official information</div>{paragraphs}</div>')
+    else:
+        body = f'<div class="answer">{paragraphs}</div>'
+    return (f'<div class="turn turn--assistant"><div class="role">Assistant</div>{body}'
+            f'<div class="chips">{status_chip(key)}{"".join(chips)}</div></div>')
+
+
+def conversation_html(history: list[dict]) -> str:
+    if not history:
+        return '<div id="conversation" class="empty"></div>'
+    return '<div id="conversation">' + "".join(t["passenger"] + t["assistant"] for t in history) + "</div>"
 
 
 # ---------------------------------------------------------------------------
 # callbacks
 # ---------------------------------------------------------------------------
 
-def answer(text, image_path, audio_path, session):
-    """The one callback. Returns: response, band, evidence source, transcript,
-    evidence markdown, updated session state."""
+def run_turn(text, image_path, audio_path, session) -> dict:
+    """Process one request on its own and return what the page needs:
+    conversation HTML, transcript, evidence, quick replies, session state."""
     session = dict(session or {})
     session.setdefault("session_id", new_session_id())
+    session.setdefault("history", [])
     session["turn"] = session.get("turn", 0) + 1
-    if not (text and text.strip()) and not image_path and not audio_path:
-        return ("Please type a question, add a photo of a sign, or record your question.",
-                "Not scored", "nothing yet", "", "", session)
+    text = (text or "").strip()
+    if not text and not image_path and not audio_path:
+        return {"conversation": conversation_html(session["history"]),
+                "notice": "Please type a question, add a photo of a sign, or record your question.",
+                "transcript": "", "evidence": "", "quick": [], "session": session}
     start = time.perf_counter()
     try:
         ctx = get_context()
@@ -138,18 +259,27 @@ def answer(text, image_path, audio_path, session):
         traceback.print_exc()
         log_event({"timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "session_id": session["session_id"],
                    "turn_index": session["turn"], "error": f"{type(exc).__name__}: {exc}"[:200]})
-        return ("Something went wrong while reading your input. Please try again, or type your question.",
-                "Not scored", "error", "", "", session)
-    latency = time.perf_counter() - start
-    log_event(event_from_outcome(outcome, session["session_id"], session["turn"], latency))
+        response = "Something went wrong while reading your input. Please try again, or type your question."
+        outcome = Outcome(route="none", decision="abstain", error=type(exc).__name__)
+        gaz, evidence = None, ""
+    else:
+        gaz = ctx.gaz
+        log_event(event_from_outcome(outcome, session["session_id"], session["turn"], time.perf_counter() - start))
+        evidence = evidence_markdown(outcome, gaz)
+    key = status_key(outcome)
+    chips = fact_chips(outcome, gaz) if gaz is not None else []
+    transcript = ""
+    if outcome.speech is not None:
+        transcript = outcome.speech.transcript_raw or ""
+    session["history"].append({"passenger": passenger_html(text, image_path, transcript, bool(audio_path)),
+                               "assistant": assistant_html(response, key, chips)})
     session["last"] = {"decision": outcome.decision, "record_id": outcome.matched_record_id,
                        "candidates": list(outcome.candidates), "conflict": outcome.conflict,
                        "terminal": outcome.text.entities.get("terminal") if outcome.text is not None else None}
-    transcript = ""
-    if outcome.speech is not None:
-        transcript = outcome.speech.transcript_raw or f"(clip rejected: {outcome.speech.check.problem})"
-    return (response.replace("\n", "\n\n"), band_text(outcome), ROUTE_LABELS.get(outcome.route, outcome.route),
-            transcript, evidence_markdown(outcome, ctx.gaz), session)
+    quick = quick_replies(outcome, gaz, text, image_path) if gaz is not None else []
+    session["quick"] = quick
+    return {"conversation": conversation_html(session["history"]), "notice": "", "transcript": transcript,
+            "evidence": evidence, "quick": quick, "session": session}
 
 
 def request_assistance(note, session):
@@ -171,75 +301,171 @@ def request_assistance(note, session):
             "are the official source for anything time-critical.")
 
 
-def clear():
-    return "", None, None, "", "Not scored", "", "", ""
-
-
 # ---------------------------------------------------------------------------
 # layout
 # ---------------------------------------------------------------------------
 
 CSS = """
-#header { padding: 0.6rem 0 0.2rem 0; }
-#header h1 { margin: 0; font-size: 1.5rem; letter-spacing: 0.02em; }
-#header p { margin: 0.2rem 0 0 0; opacity: 0.8; }
-#notice { border-left: 4px solid #7a7a7a; padding: 0.4rem 0.8rem; margin: 0.4rem 0 0.8rem 0; }
-#response { min-height: 6rem; line-height: 1.5; }
-.status-box textarea { font-weight: 600; }
-footer { display: none !important; }
+.gradio-container { --bg:#f3f2f2; --surface:#eae9e9; --ink:#201e1d; --accent:#ec3013; --accent-deep:#ae1800;
+                    --muted:#605d5d; --rule:rgba(32,30,29,.4); --gutter:40px;
+                    max-width: 1280px !important; margin: 0 auto; background: var(--bg) !important; color: var(--ink); }
+.gradio-container main.app { padding: 0 !important; }
+.gradio-container .block, .gradio-container .form { border: 0 !important; background: none !important; box-shadow: none !important; }
+footer, .built-with { display: none !important; }
+body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui, sans-serif; border-radius: 0 !important; }
+#app { gap: 0; }
+#header { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+          padding: 16px var(--gutter); border-bottom: 2px solid var(--rule); }
+#header .mark { color: var(--accent); font-size: 26px; line-height: 1; }
+#header h1 { margin: 0; font-size: 20px; line-height: 1.12; font-weight: 800; }
+#header p { margin: 4px 0 0 0; font-size: 14px; color: var(--muted); }
+#header .brand { display: flex; align-items: center; gap: 16px; }
+#assist-toggle { min-height: 44px; flex: 0 0 auto !important; padding: 0 20px; background: transparent; border: 1px solid var(--rule); }
+#conversation-wrap { padding: 0 !important; }
+#conversation { padding: 8px var(--gutter) 16px; }
+#conversation .turn { display: flex; flex-direction: column; gap: 10px; padding: 22px 0; border-top: 1px solid var(--rule); }
+#conversation .turn:first-child { border-top: 0; }
+.role, .subrole, #examples-label { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.turn--assistant .role { color: var(--accent-deep); }
+.answer, .answer p { font-size: 16px; line-height: 1.55; max-width: 68ch; margin: 0; }
+.answer p + p { margin-top: 8px; }
+.turn--user .answer { color: #444141; }
+.muted { color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 10px;
+        border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
+.chip--none { color: var(--accent-deep); border-color: var(--accent-deep); font-weight: 600; }
+.chip--ok { font-weight: 600; }
+.chip--media { align-self: flex-start; background: var(--surface); }
+.thumb { width: 112px; height: 84px; object-fit: contain; background: var(--surface); border: 1px solid var(--rule); }
+.official { padding: 18px 20px; background: var(--surface); border: 1px solid var(--rule);
+            border-left: 2px solid var(--ink); max-width: 620px; }
+.official p { font-size: 16px; line-height: 1.55; margin: 8px 0 0 0; }
+#examples { padding: 0 var(--gutter) 8px; }
+#examples-label { margin: 24px 0 8px; }
+#examples .row { justify-content: flex-start; }
+#examples .ex { min-height: 44px; flex: 0 0 auto !important; padding: 0 14px; background: var(--bg); border: 1px solid var(--rule); font-weight: 400; font-size: 15px; }
+#examples-hint { font-size: 14px; color: var(--muted); }
+#quick { padding: 0 var(--gutter) 12px; }
+#quick .row { justify-content: flex-start; }
+#quick button { min-height: 44px; flex: 0 0 auto !important; padding: 0 20px; border: 1px solid var(--rule); background: var(--bg); font-weight: 600; }
+#notice { padding: 0 var(--gutter); color: var(--accent-deep); font-size: 14px; }
+#evidence, #assistance { padding: 0 var(--gutter) 16px !important; border-top: 1px solid var(--rule) !important; }
+#assistance { padding-top: 16px !important; }
+#assistance textarea { background: var(--bg); border: 1px solid var(--rule) !important; font-size: 16px; }
+#assistance button { flex: 0 0 auto !important; align-self: flex-start; min-height: 48px; padding: 0 20px;
+                     background: var(--accent); color: var(--bg); font-weight: 800; border: 0; }
+#evidence .label-wrap span, #assistance .label-wrap span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+#composer { border-top: 2px solid var(--rule); background: var(--surface); padding: 18px var(--gutter) 22px; margin-top: 8px; }
+#composer textarea, #transcript textarea { min-height: 48px; font-size: 16px; background: var(--bg);
+                    border: 1px solid var(--rule) !important; padding: 12px; }
+#composer label span, #transcript label span { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
+#send { background: var(--accent); color: var(--bg); font-weight: 800; border: 0; min-height: 48px; }
+#send:hover { background: #dd2b0f; }
+#clear { background: transparent; border: 1px solid var(--rule); min-height: 48px; }
+#question, #transcript, #assistance .block, #examples .block, #notice { padding-left: 0 !important; padding-right: 0 !important; }
+#scope { font-size: 13px; color: var(--muted); margin-top: 8px; }
+#photo, #voice { background: var(--bg) !important; border: 1px solid var(--rule) !important; }
+#assistance-note { font-size: 14px; }
+:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px; }
+@media (max-width: 760px) {
+  .gradio-container { --gutter: 18px; }
+  #header { flex-direction: column; align-items: flex-start; }
+  #composer .row, #quick .row, #examples .row { flex-direction: column; align-items: stretch; }
+}
 """
 
 
 def build_ui() -> gr.Blocks:
-    theme = gr.themes.Base(primary_hue="slate", neutral_hue="gray", font=[gr.themes.GoogleFont("Inter"), "sans-serif"])
+    theme = gr.themes.Base(primary_hue="red", neutral_hue="stone",
+                           font=[gr.themes.GoogleFont("Archivo"), "system-ui", "sans-serif"])
     with gr.Blocks(theme=theme, css=CSS, title=f"{AIRPORT} passenger assistant") as demo:
         session = gr.State({})
-        with gr.Column(elem_id="header"):
-            gr.Markdown(f"# {AIRPORT} passenger assistant\n"
-                        "Ask about gates, check-in, baggage, security, toilets, transport, lounges, "
-                        "first aid and assistance. Type, add a photo of a sign, or speak.")
-        gr.Markdown("**Demonstration system for a fictional airport.** All information is synthetic. "
-                    "Live flight, gate and delay information is never given here; the airport's displays "
-                    "and staff are the official source.", elem_id="notice")
-        with gr.Row():
-            with gr.Column(scale=5):
-                text_in = gr.Textbox(label="Your question", placeholder="For example: Where is gate B12?",
-                                     lines=2, elem_id="question")
-                # image_mode=None keeps the file as uploaded: the default RGB conversion
-                # turns a transparent pictogram into a black square before it reaches us
-                image_in = gr.Image(label="Photo of a sign (optional)", type="filepath", sources=["upload"],
-                                    image_mode=None, height=220, elem_id="photo")
-                audio_in = gr.Audio(label="Or ask by voice (optional)", type="filepath",
-                                    sources=["microphone", "upload"], elem_id="voice")
-                with gr.Row():
-                    ask = gr.Button("Ask", variant="primary", elem_id="ask")
-                    reset = gr.Button("Clear", elem_id="clear")
-            with gr.Column(scale=6):
-                response = gr.Markdown(label="Answer", value="", elem_id="response")
-                with gr.Row():
-                    band = gr.Textbox(label="Match band", value="Not scored", interactive=False, lines=2,
-                                      info="How well your input matched: strong, uncertain, or no reliable match. "
-                                           "It is not a probability. The number behind it is under Evidence and details.",
-                                      elem_classes=["status-box"], elem_id="band")
-                    source = gr.Textbox(label="Evidence used", value="", interactive=False, elem_id="source")
-                transcript = gr.Textbox(label="What I heard (voice input)", value="", interactive=False,
-                                        elem_id="transcript")
-                with gr.Accordion("Evidence and details", open=False, elem_id="evidence"):
-                    evidence = gr.Markdown(value="")
-                with gr.Accordion("Request assistance", open=False, elem_id="assistance"):
-                    gr.Markdown("If the answer did not help, leave a short note. A reference number is "
-                                "recorded for the airport's contact route named in the answer.")
-                    note = gr.Textbox(label="Your note (optional)", lines=2)
-                    request = gr.Button("Record assistance request")
-                    ticket_out = gr.Markdown(value="")
-        gr.Markdown("The match band says how well your input matched the airport information: strong match, "
-                    "uncertain (please confirm), or no reliable match. It is based on similarity, not on a "
-                    "probability that the answer is correct; the underlying numbers are shown under Evidence and details.")
+        with gr.Column(elem_id="app"):
+            with gr.Row(elem_id="header"):
+                gr.HTML(f'<div class="brand"><span class="mark" aria-hidden="true">&#9992;</span>'
+                        f'<div><h1>{TITLE}</h1><p>{SUBTITLE}</p></div></div>')
+                assist_toggle = gr.Button("Request assistance", elem_id="assist-toggle", scale=0, min_width=200)
 
-        outputs = [response, band, source, transcript, evidence, session]
-        ask.click(answer, inputs=[text_in, image_in, audio_in, session], outputs=outputs)
-        text_in.submit(answer, inputs=[text_in, image_in, audio_in, session], outputs=outputs)
-        reset.click(clear, inputs=None, outputs=[text_in, image_in, audio_in, response, band, source, transcript, evidence])
+            with gr.Column(elem_id="examples") as examples:
+                gr.HTML('<div id="examples-label">Try asking</div>')
+                with gr.Row():
+                    example_buttons = [gr.Button(q, elem_classes=["ex"]) for q in EXAMPLES]
+                gr.HTML('<div id="examples-hint">You can also send a photo of a sign, or record your question. '
+                        'Both work together with text.</div>')
+
+            conversation = gr.HTML(conversation_html([]), elem_id="conversation-wrap")
+            notice = gr.HTML("", elem_id="notice")
+            with gr.Row(elem_id="quick"):
+                quick_buttons = [gr.Button("", visible=False) for _ in range(QUICK_REPLY_SLOTS)]
+            transcript = gr.Textbox(label="You said — edit if this is wrong, then press Enter to ask again",
+                                    visible=False, lines=1, elem_id="transcript")
+
+            with gr.Accordion("Evidence & details", open=False, elem_id="evidence"):
+                evidence = gr.Markdown(value=HISTORY_NOTE)
+            with gr.Column(visible=False, elem_id="assistance") as assistance:
+                gr.HTML('<div class="role">Assistance request</div>')
+                gr.Markdown("If the answer did not help, leave a short note. A reference number is recorded "
+                            "for the airport's contact route named in the answer. No one is connected to this chat.",
+                            elem_id="assistance-note")
+                note = gr.Textbox(label="Your note (optional)", lines=2)
+                request = gr.Button("Record assistance request", variant="primary")
+                ticket_out = gr.Markdown(value="")
+
+            with gr.Column(elem_id="composer"):
+                text_in = gr.Textbox(label="Your question", placeholder="Ask about your journey…", lines=1,
+                                     elem_id="question")
+                with gr.Row():
+                    # image_mode=None keeps the file as uploaded: the default RGB conversion
+                    # turns a transparent pictogram into a black square before it reaches us
+                    image_in = gr.Image(label="Photo of a sign (optional)", type="filepath", sources=["upload"],
+                                        image_mode=None, height=140, elem_id="photo", scale=2)
+                    audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
+                                        sources=["microphone", "upload"], elem_id="voice", scale=2)
+                    with gr.Column(scale=1, min_width=160):
+                        send = gr.Button("Send →", elem_id="send")
+                        clear = gr.Button("Clear conversation", elem_id="clear")
+                gr.HTML(f'<div id="scope">{SCOPE_NOTE}</div>')
+
+        turn_outputs = [conversation, examples, notice, *quick_buttons, transcript, evidence, session,
+                        text_in, image_in, audio_in]
+
+        def to_outputs(result: dict) -> list:
+            quick = result["quick"]
+            buttons = [gr.update(value=q["label"], visible=True) for q in quick]
+            buttons += [gr.update(value="", visible=False)] * (QUICK_REPLY_SLOTS - len(buttons))
+            heard = result["transcript"]
+            return [result["conversation"], gr.update(visible=not result["session"].get("history")),
+                    result["notice"], *buttons, gr.update(value=heard, visible=bool(heard)),
+                    result["evidence"] or HISTORY_NOTE, result["session"], "", None, None]
+
+        def on_send(text, image_path, audio_path, session):
+            return to_outputs(run_turn(text, image_path, audio_path, session))
+
+        def on_quick(index, session):
+            choice = (session or {}).get("quick", [])[index] if index < len((session or {}).get("quick", [])) else {}
+            return to_outputs(run_turn(choice.get("text"), choice.get("image"), None, session))
+
+        def on_example(label, session):
+            return to_outputs(run_turn(label, None, None, session))
+
+        def on_clear(session):
+            kept = {"session_id": (session or {}).get("session_id", new_session_id())}
+            return to_outputs({"conversation": conversation_html([]), "notice": "", "transcript": "",
+                               "evidence": "", "quick": [], "session": kept})
+
+        send.click(on_send, inputs=[text_in, image_in, audio_in, session], outputs=turn_outputs)
+        text_in.submit(on_send, inputs=[text_in, image_in, audio_in, session], outputs=turn_outputs)
+        transcript.submit(lambda heard, s: to_outputs(run_turn(heard, None, None, s)),
+                          inputs=[transcript, session], outputs=turn_outputs)
+        for i, button in enumerate(quick_buttons):
+            button.click(on_quick, inputs=[gr.State(i), session], outputs=turn_outputs)
+        for button in example_buttons:
+            button.click(on_example, inputs=[button, session], outputs=turn_outputs)
+        clear.click(on_clear, inputs=[session], outputs=turn_outputs)
+        assist_open = gr.State(False)
+        assist_toggle.click(lambda is_open: (gr.update(visible=not is_open), not is_open),
+                            inputs=[assist_open], outputs=[assistance, assist_open])
         request.click(request_assistance, inputs=[note, session], outputs=[ticket_out])
     return demo
 

@@ -139,6 +139,21 @@ Models load on the first question. Each turn appends one line to
 no words, no media); an assistance request appends a ticket with a
 reference number to `outputs/logs/tickets.jsonl`.
 
+The page shows the session as a conversation, but that is presentation
+only: each request is routed on its own from the current text, photo and
+audio, earlier turns are never added to a new request, and "Clear
+conversation" only empties the screen. The status next to every answer is
+a symbol plus words (strong match, uncertain, no reliable match, question
+back to you, inputs disagree, official information), so colour is never
+the only signal; the similarity numbers behind it sit under "Evidence &
+details" and are described there as retrieval distances, not
+probabilities. Quick-reply buttons after a clarification or a conflict
+fill in the request the answer asks for (for example "security in
+Terminal 1", or the same question without the photo) and send it through
+the same path as a typed one. The layout was reworked after the blind
+evaluations (see `docs/checkpoints/05_0_ui_presentation.md`); no
+retrieval, routing, threshold, knowledge-base or model code changed.
+
 ## Running the vision and speech pipelines
 
 ```bash
