@@ -108,26 +108,42 @@ def question_aspect(result: RetrievalResult) -> str:
     return "where"
 
 
-def hours_verdict(record: dict, clock: str) -> str | None:
-    """"Yes/No, scheduled to be open at HH:MM" when the listed hours are a
-    plain daily range; None when they are not (then the hours are quoted).
-    An overnight range (04:00-01:00) wraps past midnight."""
-    hours = record.get("opening_hours") or {}
+def _open_at(record: dict, clock: str) -> list[tuple[bool, str, str]] | None:
+    """(open?, listed range, period label) per listed period, or None when a
+    period is not a plain HH:MM-HH:MM range. Overnight ranges wrap."""
     hour, minute = (int(p) for p in clock.split(":"))
     asked = hour * 60 + minute
-    verdicts = []
-    for period, value in hours.items():
+    out = []
+    for period, value in (record.get("opening_hours") or {}).items():
         m = CLOCK_RANGE.match(value.strip())
         if not m:
             return None
         start = int(m.group(1)) * 60 + int(m.group(2))
         end = int(m.group(3)) * 60 + int(m.group(4))
         is_open = start <= asked < end if start < end else (asked >= start or asked < end)
-        listed = f"{m.group(1)}:{m.group(2)}–{m.group(3)}:{m.group(4)}"
         label = "" if period == "mon_sun" else f" {PERIOD_LABELS.get(period, period)}"
-        verdicts.append((is_open, listed, label))
-    if not verdicts:
+        out.append((is_open, f"{m.group(1)}:{m.group(2)}–{m.group(3)}:{m.group(4)}", label))
+    return out or None
+
+
+def hours_verdict(record: dict, clock: str) -> str | None:
+    """"Yes/No, scheduled to be open at HH:MM" when the listed hours are plain
+    ranges; None when they are not (then the hours are quoted). A clock of
+    the form "09:15|21:15" is a time given without am/pm: when both readings
+    agree the verdict is given, otherwise the passenger is asked which."""
+    readings = clock.split("|")
+    results = [_open_at(record, reading) for reading in readings]
+    if any(r is None for r in results):
         return None
+    if len(readings) == 2:
+        morning, evening = results
+        if [o for o, _, _ in morning] != [o for o, _, _ in evening]:
+            listed = "; ".join(f"{rng}{label}" for _, rng, label in morning)
+            return (f"{record['name']} is listed as {listed}, so the answer depends on whether you mean "
+                    f"{readings[0]} or {readings[1]}.")
+        clock = f"{readings[0]} or {readings[1]}"
+        results = [morning]
+    verdicts = results[0]
     if len(verdicts) == 1:
         is_open, listed, _ = verdicts[0]
         return (f"{'Yes' if is_open else 'No'}. {record['name']} is scheduled to be "

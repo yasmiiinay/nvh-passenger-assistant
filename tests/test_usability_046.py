@@ -269,3 +269,30 @@ def test_action_requests_are_refused_with_a_pointer(gaz, index):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ---------------------------------------------------------------------------
+# round 2 (manual QA): clock spellings and aspect intents
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("query,value", [
+    ("Is Security North open at 9.15 p.m.?", "21:15"),     # normaliser output "9 15 p m"
+    ("is lost property open at 8 a.m.", "08:00"),
+    ("is the lounge open at 11pm", "23:00"),
+    ("is the lounge open at 20:30", "20:30"),
+    ("Is the lounge open at 9 15?", "09:15|21:15"),        # no am/pm: both readings kept
+])
+def test_clock_spellings(gaz, query, value):
+    assert [e.value for e in extract(query, gaz).of_type("clock_time")] == [value]
+
+
+def test_ambiguous_clock_gives_no_verdict_when_the_readings_disagree(gaz):
+    from src.responses import hours_verdict
+    south = gaz.records["security_t1_south"]                 # 04:30-21:00
+    assert "depends on whether you mean 09:30 or 21:30" in hours_verdict(south, "09:30|21:30")
+    assert hours_verdict(gaz.records["lounge_aurora"], "09:15|21:15").startswith("Yes.")   # both open
+
+
+def test_hours_intent_does_not_pull_other_categories_into_a_single_record_cue(gaz, index):
+    r = ask("Is Sacred North open at 9.15 p.m.?", gaz, index)     # ASR for "Security North"
+    assert not {"cafe_harbour", "lounge_aurora"} & set(r.candidates + [r.matched_record_id or ""])

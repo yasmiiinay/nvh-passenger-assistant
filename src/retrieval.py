@@ -451,7 +451,12 @@ def candidate_records(intent: str, handoff: dict, gaz: Gazetteers, filter_mode: 
     cue_records = handoff.get("cue_records") or []
     if cue_records:
         cue_category = gaz.records[cue_records[0]]["category"]
-        if intent == NO_INTENT or cue_category in categories:
+        # hours and directions intents say what is asked about a place, not
+        # which place: they must not add other categories to a cue that has
+        # already named one ("is [security] north open at 9 pm", 04.6)
+        aspect_intent = intent != NO_INTENT and \
+            gaz.vocabulary["intents"][intent]["response_type"] in ("hours", "directions")
+        if intent == NO_INTENT or cue_category in categories or aspect_intent:
             return cue_records, STAGE_CATEGORY
         allowed = cue_records + [rid for rid in gaz.records if gaz.records[rid]["category"] in categories]
         return constrain(allowed, gaz, terminals=handoff.get("terminal") or [], zones=handoff.get("zones") or [],

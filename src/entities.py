@@ -54,11 +54,11 @@ GATE_PATTERN = re.compile(r"\b([abc])(\d{1,2})\b")
 _ID_LINK = r"(?:\s+(?:number|no))?(?:\s+(?:is|at))?(?:\s+(?:number|no))?\s+"   # "desk 225", "desk is 225", "desk number 225"
 DESK_PATTERN = re.compile(r"\b(?:check ?in\s+)?(?:desk|counter)s?" + _ID_LINK + r"(\d{3})\b")
 BELT_PATTERN = re.compile(r"\b(?:belt|carousel)s?" + _ID_LINK + r"(\d{1,2})\b")
-# an explicit clock time: "8 30 pm", "8pm", "at 20 30" (the normaliser drops
-# the colon); a bare "20 30" counts only after a time preposition
-CLOCK_PATTERN = re.compile(
-    r"\b(?:(\d{1,2})(?:[ :](\d{2}))?\s?(am|pm)\b|(?<=\bat )(\d{1,2})[ :](\d{2})\b|(?<=\bby )(\d{1,2})[ :](\d{2})\b|"
-    r"(?<=\baround )(\d{1,2})[ :](\d{2})\b|(?<=\buntil )(\d{1,2})[ :](\d{2})\b)")
+# an explicit clock time. The normaliser turns "8:30 p.m." into "8 30 p m",
+# so the meridiem is read in both spellings; a bare "20 30" counts only after
+# a time preposition, and a bare hour of 1-12 without am/pm stays ambiguous
+MERIDIEM_TIME = re.compile(r"\b(\d{1,2})(?:[ :](\d{2}))?\s?(a ?m|p ?m)\b")
+PREPOSITION_TIME = re.compile(r"\b(?:at|by|around|until|before|after|from) (\d{1,2})[ :](\d{2})\b")
 DESTINATION_PATTERN = re.compile(r"\b(?:to|towards|toward|into|onto)\s+(?:the\s+)?$")
 # words that carry no service meaning on their own; a query left with only
 # these (after its identifiers, aliases, zones and terminals are taken out)
@@ -317,20 +317,24 @@ def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction
 
     # --- explicit clock times, then relative time references ---
     time_spans = []
-    for m in CLOCK_PATTERN.finditer(norm):
+    clock_matches = [(m, m.group(3).replace(" ", "")) for m in MERIDIEM_TIME.finditer(norm)]
+    clock_matches += [(m, None) for m in PREPOSITION_TIME.finditer(norm)
+                      if not any(m.start() < c.end() and m.end() > c.start() for c, _ in clock_matches)]
+    for m, meridiem in sorted(clock_matches, key=lambda item: item[0].start()):
         if not free(m.span()):
             continue
-        groups = [g for g in m.groups() if g is not None]
-        meridiem = groups[-1] if groups[-1] in ("am", "pm") else None
-        digits = [g for g in groups if g not in ("am", "pm")]
-        hour, minute = int(digits[0]), int(digits[1]) if len(digits) > 1 else 0
+        hour, minute = int(m.group(1)), int(m.group(2) or 0)
+        if hour > 23 or minute > 59 or (meridiem and not 1 <= hour <= 12):
+            continue
         if meridiem == "pm" and hour < 12:
             hour += 12
-        if meridiem == "am" and hour == 12:
+        elif meridiem == "am" and hour == 12:
             hour = 0
-        if hour > 23 or minute > 59 or (meridiem is None and hour > 23):
-            continue
-        ents.append(Entity("clock_time", f"{hour:02d}:{minute:02d}", m.group(0)))
+        value = f"{hour:02d}:{minute:02d}"
+        if meridiem is None and 1 <= hour <= 12:
+            # "at 9 15": morning or evening; both readings are kept (04.6)
+            value = f"{hour:02d}:{minute:02d}|{(hour % 12) + 12:02d}:{minute:02d}"
+        ents.append(Entity("clock_time", value, m.group(0)))
         time_spans.append(m.span())
         consumed.append(m.span())
     for m in TIME_PATTERN.finditer(norm):
