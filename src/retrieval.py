@@ -262,7 +262,8 @@ def _resolve_deterministic(query: str, gaz: Gazetteers, pending: dict | None = N
                        f"'{ex.unsupported[0]}' is a service the knowledge base does not hold", None)
 
     # ---- scripted branch 1c: movement between the terminals (04.6) ----
-    if ex.transfer and not alias_hits and not ex.category_cues and not ex.families:
+    transport_only_cues = all(c == "transport" for _, c in ex.category_cues)
+    if ex.transfer and not alias_hits and transport_only_cues and not ex.families:
         connecting = connecting_records(gaz)
         if len(connecting) == 1:
             result.flags.append("terminal_transfer")

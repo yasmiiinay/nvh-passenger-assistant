@@ -168,6 +168,13 @@ def test_voice_transcript_security_terminal_one(gaz, index):
     ("I need to get to the other terminal", "shuttle_t1_t2"),
     ("from T2 to T1", "shuttle_t1_t2"),
     ("shuttle between the terminals", "shuttle_t1_t2"),
+    ("What's the best way to change from Terminal 1 to Terminal 2?", "shuttle_t1_t2"),   # "change" is a transport cue
+    ("Which way is check-in desk number 218?", "checkin_t2"),
+    ("I'm beside Security South and I need first aid.", "first_aid_t1"),
+    ("When does the last airport train leave?", "rail_station"),
+    ("I misplaced my wallet somewhere in the airport.", "lost_property_t1"),
+    ("I'm near the information desk and I feel unwell. Is there a nurse?", "first_aid_t1"),
+    ("Where can I get wheelchair help in Terminal 1 arrivals?", "prm_point_t1_entrance"),
     ("I use a wheelchair, where do I get help in terminal 1?", "prm_point_t1_entrance"),
     ("I feel faint, where is the medical room", "first_aid_t1"),
     ("How do I get from the rail station up to departures?", "rail_station"),            # landmark is the topic
