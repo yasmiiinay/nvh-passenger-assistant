@@ -29,6 +29,13 @@ Voice enters as text: the clip goes through the audio gate and Whisper and
 the transcript takes the place of typed text. A rejected clip with a usable
 photo falls through to the image rules; without a photo it asks the
 passenger to re-record or type.
+
+One-turn clarification context (04.6): `route` accepts the previous turn's
+`pending` clarification (category, terminal, zone) and returns in
+`Outcome.pending_next` what the next turn may inherit. Only a short
+fragment ("what about terminal 2?") consults it; a complete question
+ignores it; anything but a clarification leaves nothing behind. No image or
+audio data is ever carried.
 """
 from __future__ import annotations
 
@@ -36,8 +43,7 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 from configs.settings import SETTINGS
-from src.responses import asks_live_status, is_action_request
-from src.retrieval import RetrievalResult, resolve
+from src.retrieval import RetrievalResult, asks_live_status, is_action_request, pending_context, resolve
 from src.speech import SpeechResult, check_audio, has_speech_text, load_audio, process_transcript, transcribe
 from src.vision import VisionResult, analyse_image, build_vision_index, load_prompts
 
@@ -82,6 +88,7 @@ class Outcome:
     vision: VisionResult | None = None
     speech: SpeechResult | None = None
     error: str | None = None
+    pending_next: dict | None = None            # clarification context the next turn may use (04.6)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -91,10 +98,10 @@ class Outcome:
 # evidence from each modality on its own
 # ---------------------------------------------------------------------------
 
-def text_evidence(text: str | None, ctx: Context) -> RetrievalResult | None:
+def text_evidence(text: str | None, ctx: Context, pending: dict | None = None) -> RetrievalResult | None:
     if not text or not text.strip():
         return None
-    return resolve(text.strip(), ctx.gaz, ctx.text_index, ctx.thresholds)
+    return resolve(text.strip(), ctx.gaz, ctx.text_index, ctx.thresholds, pending=pending)
 
 
 def speech_evidence(audio_path: str | Path, ctx: Context) -> SpeechResult:
@@ -357,9 +364,10 @@ def apply_rules(text: RetrievalResult | None, vision: VisionResult | None,
 
 
 def route(text: str | None, image_path: str | Path | None, audio_path: str | Path | None,
-          ctx: Context) -> Outcome:
+          ctx: Context, pending: dict | None = None) -> Outcome:
     """Gather evidence and apply the rules. Typed text takes precedence over
-    a voice clip when both are given; the transcript is still recorded."""
+    a voice clip when both are given; the transcript is still recorded.
+    `pending` is the previous turn's clarification context, if any."""
     speech = None
     vision = None
     errors = []
@@ -377,9 +385,12 @@ def route(text: str | None, image_path: str | Path | None, audio_path: str | Pat
     typed = query is not None
     if query is None and speech is not None and speech.check.ok:
         query = speech.transcript_raw
-    text_result = text_evidence(query, ctx)
+    text_result = text_evidence(query, ctx, pending)
     out = apply_rules(text_result, vision, speech, ctx, typed=typed)
     if errors:
         out.error = "; ".join(errors)
         out.flags.append("input_error")
+    # only a text clarification that still stands leaves context behind; a
+    # photo that settled the question, a conflict or an answer clears it
+    out.pending_next = pending_context(text_result, ctx.gaz) if out.decision == "clarify" else None
     return out

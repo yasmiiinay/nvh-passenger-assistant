@@ -16,6 +16,17 @@ All matching runs on normalised text (src/normalizer.py), so a typed query
 and an ASR transcript are handled identically. The flight_ref pattern is the
 one exception: its uppercase form is looked for in the raw text as well,
 because lowercasing would make "NH123" indistinguishable from "at 10".
+
+Usability hardening 04.6 added, from vocabulary.json "query_interpretation":
+  5. a service or identifier mention that follows a location preposition
+     ("near Security North", "at gate B12") is a LANDMARK, not the requested
+     service: Entity.role tells the cascade which is which;
+  6. zone / journey-stage phrases (airside, after security, arrivals, just
+     landed ...), service families (accessibility vs medical), inter-terminal
+     transfer wording, explicit clock times, unsupported-service terms and a
+     small alias supplement, all consumed so their words are not read again
+     as category cues;
+  7. a fragment flag for service-free text ("what about terminal 2?").
 """
 from __future__ import annotations
 
@@ -34,11 +45,34 @@ CUE_EXCLUDED = {
     "a", "an", "and", "the", "to", "of", "in", "on", "at", "for", "from",
     "with", "by", "i", "my", "me", "you", "is", "are", "where", "how", "what",
     "between", "before", "after", "near", "there", "here", "this", "that",
+    "help", "have",   # request words ("medical help", "i have lost"), not service names (04.6)
 }
 
 GATE_PATTERN = re.compile(r"\b([abc])(\d{1,2})\b")
-DESK_PATTERN = re.compile(r"\bdesks?\s+(\d{3})\b")
-BELT_PATTERN = re.compile(r"\b(?:belt|carousel)s?\s+(\d{1,2})\b")
+# "desk 225", "desk is 225", "desk number 225", "check in counter 225": the
+# identifier grammar, not one phrasing (04.6)
+_ID_LINK = r"(?:\s+(?:number|no))?(?:\s+(?:is|at))?(?:\s+(?:number|no))?\s+"   # "desk 225", "desk is 225", "desk number 225"
+DESK_PATTERN = re.compile(r"\b(?:check ?in\s+)?(?:desk|counter)s?" + _ID_LINK + r"(\d{3})\b")
+BELT_PATTERN = re.compile(r"\b(?:belt|carousel)s?" + _ID_LINK + r"(\d{1,2})\b")
+# an explicit clock time: "8 30 pm", "8pm", "at 20 30" (the normaliser drops
+# the colon); a bare "20 30" counts only after a time preposition
+CLOCK_PATTERN = re.compile(
+    r"\b(?:(\d{1,2})(?:[ :](\d{2}))?\s?(am|pm)\b|(?<=\bat )(\d{1,2})[ :](\d{2})\b|(?<=\bby )(\d{1,2})[ :](\d{2})\b|"
+    r"(?<=\baround )(\d{1,2})[ :](\d{2})\b|(?<=\buntil )(\d{1,2})[ :](\d{2})\b)")
+DESTINATION_PATTERN = re.compile(r"\b(?:to|towards|toward|into|onto)\s+(?:the\s+)?$")
+# words that carry no service meaning on their own; a query left with only
+# these (after its identifiers, aliases, zones and terminals are taken out)
+# is a fragment that must not be sent to similarity search (04.6)
+FUNCTION_WORDS = {
+    "a", "an", "the", "and", "or", "of", "to", "in", "on", "at", "by", "for", "from", "with", "about", "as",
+    "i", "me", "my", "we", "you", "your", "it", "its", "this", "that", "these", "those", "there", "here",
+    "is", "are", "am", "was", "be", "do", "does", "did", "can", "could", "would", "should", "will",
+    "what", "where", "which", "how", "when", "who", "why", "way", "go", "get", "find", "need", "want",
+    "looking", "like", "please", "thanks", "thank", "ok", "okay", "yes", "no", "now", "then", "also",
+    "same", "other", "one", "instead", "so", "um", "uh", "hmm", "just", "still", "again", "too",
+    "terminal", "terminals", "t1", "t2", "not", "have", "has", "had", "been", "im", "ive",
+    "near", "beside", "next", "opposite", "close", "around", "outside", "front", "behind", "over", "up", "down",
+}
 TERMINAL_PATTERN = re.compile(r"\bterminal\s+(\d)\b")
 FLIGHT_RAW_PATTERN = re.compile(r"\b([A-Z]{2})\s?(\d{2,4})\b")
 FLIGHT_SPOKEN_PATTERN = re.compile(r"\bflight\s+([a-z]{2})\s?(\d{2,4})\b")
@@ -55,6 +89,7 @@ class Entity:
     surface: str                     # text as matched in the normalised query
     exists: bool | None = None       # identifiers/terminals: known to the KB?
     record_ids: tuple[str, ...] = () # records this entity points to, if any
+    role: str = "target"             # "landmark" when named as the passenger's position, not the request
 
 
 @dataclass
@@ -63,15 +98,26 @@ class Extraction:
     normalized: str
     entities: list[Entity] = field(default_factory=list)
     category_cues: list[tuple[str, str]] = field(default_factory=list)  # (token, category)
+    zones: list[str] = field(default_factory=list)          # airside / landside / arrivals / departures
+    families: list[str] = field(default_factory=list)       # accessibility / medical
+    unsupported: list[str] = field(default_factory=list)    # named services the KB does not hold
+    transfer: bool = False                                  # movement between the two terminals
+    destination: str | None = None                          # a zone the passenger is heading to ("up to departures")
+    fragment: bool = False                                  # no service words at all
 
-    def of_type(self, entity_type: str) -> list[Entity]:
-        return [e for e in self.entities if e.type == entity_type]
+    def of_type(self, entity_type: str, role: str | None = "target") -> list[Entity]:
+        """Entities of one type; by default only those the passenger asks
+        for. role=None returns landmarks as well."""
+        return [e for e in self.entities if e.type == entity_type and (role is None or e.role == role)]
+
+    def landmarks(self) -> list[Entity]:
+        return [e for e in self.entities if e.role == "landmark"]
 
     def as_json_dict(self) -> dict[str, str]:
         """Same shape as entities_json in queries_seed.csv (first value per type)."""
         out: dict[str, str] = {}
         for e in self.entities:
-            out.setdefault(e.type, e.value)
+            out.setdefault("landmark" if e.role == "landmark" else e.type, e.value)
         return out
 
 
@@ -102,6 +148,7 @@ class Gazetteers:
         self.alias_index: dict[str, str] = {}
         self.volatile_phrases: dict[str, str] = {}
         self.category_cues: dict[str, str] = {}
+        self.query_words = vocabulary.get("query_interpretation", {})
         self._build()
 
     def _build(self) -> None:
@@ -113,7 +160,8 @@ class Gazetteers:
             for rng in r.get("identifier_ranges", []):
                 self.identifier_ranges.setdefault(rng["prefix"].strip().upper(), []).append(
                     (rid, int(rng["from"]), int(rng["to"]), rng["prefix"].upper()))
-            phrases = [r["name"]] + list(r.get("aliases", []))
+            phrases = [r["name"]] + list(r.get("aliases", [])) + \
+                list(self.query_words.get("service_synonyms", {}).get(rid, []))
             normalised_phrases = {normalize(p) for p in phrases if p}
             if r.get("volatility") == "high":
                 # volatile records feed the redirect branch only; their words
@@ -148,6 +196,21 @@ class Gazetteers:
         determiners = sorted({v for v in self.deictic_values if " " not in v and v != "here"} | {"these", "those"})
         self._deictic_pattern = re.compile(
             r"\b(?:(?:" + "|".join(determiners) + r")(?:\s+(?:" + "|".join(DEICTIC_HEAD_NOUNS) + r"))?|here)\b")
+        # 04.6 word lists (vocabulary.json "query_interpretation"); each is
+        # compiled once, longest phrase first, and matched on free spans only
+        def phrase_pattern(phrases):
+            phrases = sorted({normalize(p) for p in phrases if p}, key=len, reverse=True)
+            return re.compile(r"\b(" + "|".join(re.escape(p) for p in phrases) + r")\b") if phrases else None
+        preps = self.query_words.get("location_prepositions", [])
+        self._landmark_pattern = (re.compile(r"(?:^|\s)(?:" + "|".join(re.escape(normalize(p)) for p in preps) +
+                                             r")\s+(?:the\s+|my\s+|a\s+|an\s+)?$") if preps else None)
+        self._zone_patterns = [(zone, phrase_pattern(phrases))
+                               for zone, phrases in self.query_words.get("zone_phrases", {}).items()]
+        self._family_patterns = [(fam, phrase_pattern(phrases))
+                                 for fam, phrases in self.query_words.get("service_families", {}).items()]
+        self._transfer_pattern = phrase_pattern(self.query_words.get("transfer_phrases", []))
+        self._unsupported_pattern = phrase_pattern(self.query_words.get("unsupported_services", []))
+        self._lead_in_pattern = phrase_pattern(self.query_words.get("fragment_lead_ins", []))
 
     def records_in_category(self, category: str) -> list[str]:
         return [r["record_id"] for r in self.kb["records"] if r["category"] == category]
@@ -169,10 +232,19 @@ def load_gazetteers(kb_path: str | Path, vocabulary_path: str | Path) -> Gazette
     return Gazetteers(load_kb(kb_path), vocabulary)
 
 
-def _identifier_entity(gaz: Gazetteers, entity_type: str, canonical: str, surface: str) -> Entity:
+def _identifier_entity(gaz: Gazetteers, entity_type: str, canonical: str, surface: str,
+                       role: str = "target") -> Entity:
     rid = gaz.identifier_index.get(canonical)
     return Entity(entity_type, canonical, surface, exists=rid is not None,
-                  record_ids=(rid,) if rid else ())
+                  record_ids=(rid,) if rid else (), role=role)
+
+
+def _role_at(norm: str, start: int, gaz: Gazetteers) -> str:
+    """"landmark" when the mention is introduced by a location preposition
+    ("near", "beside", "at", "from" ...), otherwise "target"."""
+    if gaz._landmark_pattern is not None and gaz._landmark_pattern.search(norm[:start]):
+        return "landmark"
+    return "target"
 
 
 def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction:
@@ -205,15 +277,19 @@ def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction
 
     # --- identifiers (existence checked against the expanded KB index) ---
     for m in DESK_PATTERN.finditer(norm):
-        ents.append(_identifier_entity(gaz, "desk_id", f"DESK {m.group(1)}", m.group(0)))
+        ents.append(_identifier_entity(gaz, "desk_id", f"DESK {m.group(1)}", m.group(0),
+                                       _role_at(norm, m.start(), gaz)))
         consumed.append(m.span())
     for m in BELT_PATTERN.finditer(norm):
-        ents.append(_identifier_entity(gaz, "belt_id", f"BELT {m.group(1)}", m.group(0)))
+        ents.append(_identifier_entity(gaz, "belt_id", f"BELT {m.group(1)}", m.group(0),
+                                       _role_at(norm, m.start(), gaz)))
         consumed.append(m.span())
     for m in GATE_PATTERN.finditer(norm):
         if free(m.span()):
-            ents.append(_identifier_entity(gaz, "gate_id", f"{m.group(1).upper()}{m.group(2)}", m.group(0)))
-            consumed.append(m.span())
+            start = m.start() - 5 if norm[max(0, m.start() - 5):m.start()] == "gate " else m.start()
+            ents.append(_identifier_entity(gaz, "gate_id", f"{m.group(1).upper()}{m.group(2)}", m.group(0),
+                                           _role_at(norm, start, gaz)))
+            consumed.append((start, m.end()))   # "gate" belongs to the identifier, not to the cue table
 
     # --- terminal (closed set; an unknown terminal is kept with exists=False) ---
     # Not added to `consumed`: aliases such as "accessible toilet terminal 2"
@@ -235,14 +311,63 @@ def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction
         for m in pattern.finditer(norm):
             if free(m.span()):
                 rid = gaz.alias_index[phrase]
-                ents.append(Entity("service", phrase, m.group(0), exists=True, record_ids=(rid,)))
+                ents.append(Entity("service", phrase, m.group(0), exists=True, record_ids=(rid,),
+                                   role=_role_at(norm, m.start(), gaz)))
                 consumed.append(m.span())
 
-    # --- time references (extracted, never reasoned about: no clock in MVP) ---
+    # --- explicit clock times, then relative time references ---
     time_spans = []
-    for m in TIME_PATTERN.finditer(norm):
-        ents.append(Entity("time", m.group(1), m.group(1)))
+    for m in CLOCK_PATTERN.finditer(norm):
+        if not free(m.span()):
+            continue
+        groups = [g for g in m.groups() if g is not None]
+        meridiem = groups[-1] if groups[-1] in ("am", "pm") else None
+        digits = [g for g in groups if g not in ("am", "pm")]
+        hour, minute = int(digits[0]), int(digits[1]) if len(digits) > 1 else 0
+        if meridiem == "pm" and hour < 12:
+            hour += 12
+        if meridiem == "am" and hour == 12:
+            hour = 0
+        if hour > 23 or minute > 59 or (meridiem is None and hour > 23):
+            continue
+        ents.append(Entity("clock_time", f"{hour:02d}:{minute:02d}", m.group(0)))
         time_spans.append(m.span())
+        consumed.append(m.span())
+    for m in TIME_PATTERN.finditer(norm):
+        if free(m.span()):
+            ents.append(Entity("time", m.group(1), m.group(1)))
+            time_spans.append(m.span())
+
+    # --- 04.6 word lists: zones, service families, transfer, unsupported ---
+    for zone, pattern in gaz._zone_patterns:
+        for m in (pattern.finditer(norm) if pattern else ()):
+            if free(m.span()):
+                # "up to departures" is where the passenger is going, not
+                # where they are: consumed, but not a constraint
+                if DESTINATION_PATTERN.search(norm[:m.start()]):
+                    result.destination = result.destination or zone
+                elif zone not in result.zones:
+                    result.zones.append(zone)
+                consumed.append(m.span())
+    for family, pattern in gaz._family_patterns:
+        for m in (pattern.finditer(norm) if pattern else ()):
+            if free(m.span()):
+                if family not in result.families:
+                    result.families.append(family)
+                consumed.append(m.span())
+    if gaz._transfer_pattern is not None:
+        for m in gaz._transfer_pattern.finditer(norm):
+            if free(m.span()):
+                result.transfer = True
+                consumed.append(m.span())
+    if gaz._unsupported_pattern is not None:
+        for m in gaz._unsupported_pattern.finditer(norm):
+            if free(m.span()):
+                # "toilets after passport control": an unsupported place used
+                # as a landmark says where the passenger is, not what they want
+                if _role_at(norm, m.start(), gaz) == "target":
+                    result.unsupported.append(m.group(1))
+                consumed.append(m.span())
 
     # --- deictic references: determiner plus optional generic noun, or "here" ---
     # The phrase is consumed so its noun cannot double as a category cue; a
@@ -257,5 +382,32 @@ def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction
     for m in gaz._cue_pattern.finditer(norm):
         if free(m.span()):
             result.category_cues.append((m.group(1), gaz.category_cues[m.group(1)]))
+
+    # --- transfer: two different terminals named, or transfer wording ---
+    if len({t.value for t in result.of_type("terminal", role=None)}) >= 2:
+        result.transfer = True
+
+    # --- fragment: nothing left that could name a service ---
+    residual = norm
+    for start, end in sorted(consumed, reverse=True):
+        residual = residual[:start] + " " + residual[end:]
+    for m in TERMINAL_PATTERN.finditer(residual):
+        residual = residual.replace(m.group(0), " ")
+    if gaz._lead_in_pattern is not None:
+        residual = gaz._lead_in_pattern.sub(" ", residual)
+    leftover = [t for t in residual.split() if t not in FUNCTION_WORDS and not t.isdigit()]
+    has_request = bool(result.of_type("service") or result.category_cues or result.families or
+                       result.unsupported or result.transfer or
+                       result.of_type("deictic_ref") or result.of_type("flight_ref") or
+                       [e for e in result.entities
+                        if e.type in ("gate_id", "desk_id", "belt_id") and e.role == "target"])
+    result.fragment = bool(norm.strip()) and not has_request and not leftover and not result.destination
+
+    # A landmark is only a landmark when something else is asked for. "How
+    # long is the queue at security north?" names one service after "at" and
+    # asks about that service; it is the target after all.
+    if not has_request and (leftover or result.destination) and result.landmarks():
+        result.entities = [Entity(e.type, e.value, e.surface, e.exists, e.record_ids, "target")
+                           if e.role == "landmark" else e for e in result.entities]
 
     return result

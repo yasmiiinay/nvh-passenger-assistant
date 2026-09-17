@@ -1,5 +1,11 @@
 # 05.0 — Interface presentation rework (post-evaluation, presentation only)
 
+Note (04.6): the "no memory" wording, the fact-chip restatement rule and
+the full-field answer text described here were superseded by the usability
+hardening pass (`04_6_final_usability_hardening.md`), which added a one-turn
+clarification context, concise answers and the fact-row rule G. This note
+stays as the record of the presentation-only step.
+
 Date: 17 September 2026. Base: v1.1 behaviour as frozen for blind evaluation
 v2 (commit 4d149d1; main at 505c09d). Status: implemented and tested in the
 development workspace; screenshots taken from a headless browser against

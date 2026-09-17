@@ -41,3 +41,28 @@ def load_kb(path: str | Path) -> dict:
 
 def records_by_id(kb: dict) -> dict[str, dict]:
     return {r["record_id"]: r for r in kb["records"]}
+
+
+LANDSIDE_MARKERS = ("arrivals", "check-in hall", "forecourt", "entrance", "car park", "rail station",
+                    "opposite terminal", "below terminal", "p1")
+
+
+def zone_tags(record: dict) -> set[str]:
+    """Journey-stage tags read from the record's own level and zone fields:
+    "airside" (airside levels and the piers), "landside", "arrivals",
+    "departures". A record can carry several (the Terminal 1 departures
+    restrooms span the check-in hall and the airside plaza). No facts are
+    added: a tag is present only when the field text says so (04.6)."""
+    text = f"{record.get('level', '')} {record.get('zone', '')}".lower()
+    tags = set()
+    if "airside" in text or "pier" in text:
+        tags.add("airside")
+    if any(marker in text for marker in LANDSIDE_MARKERS):
+        tags.add("landside")
+    if "arrival" in text:
+        tags.add("arrivals")
+    if "departure" in text:
+        tags.add("departures")
+        if "airside" not in tags:
+            tags.add("landside")     # a departures area that is not airside is the check-in side
+    return tags

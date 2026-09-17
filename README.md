@@ -27,6 +27,20 @@ semantic → full semantic → answer/clarify/abstain/redirect) · template
 responses grounded in KB records · Gradio Blocks UI. No generative model
 anywhere; EasyOCR is an optional, flag-gated enhancement.
 
+## Versions: v1.1 (blind-evaluated) and the final usability build
+
+Blind Evaluation v2 (`docs/report/final_blind_evaluation_v2/`) was run on
+the frozen v1.1 behavioural system (commit 4d149d1). Manual usability
+testing afterwards exposed general failure classes in service-vs-location
+interpretation, contextual retrieval, unsupported-service handling and
+short follow-ups; the later deployment-oriented usability hardening pass
+(`docs/checkpoints/04_6_final_usability_hardening.md`) addressed these
+classes and shortened the answers. The blind evaluation was not rerun, so
+its results remain evidence for v1.1 rather than a performance claim for
+the final build. The dev and held-out sets, the interface tests and a
+usability regression set (`tests/test_usability_046.py`) were rerun on the
+final build and are reported in that checkpoint.
+
 ## Supported visual scope (v1.1, stated after Blind Evaluation v1)
 
 The photo path recognises the **kind** of airport sign in an image: its
@@ -139,20 +153,23 @@ Models load on the first question. Each turn appends one line to
 no words, no media); an assistance request appends a ticket with a
 reference number to `outputs/logs/tickets.jsonl`.
 
-The page shows the session as a conversation, but that is presentation
-only: each request is routed on its own from the current text, photo and
-audio, earlier turns are never added to a new request, and "Clear
-conversation" only empties the screen. The status next to every answer is
-a symbol plus words (strong match, uncertain, no reliable match, question
-back to you, inputs disagree, official information), so colour is never
-the only signal; the similarity numbers behind it sit under "Evidence &
-details" and are described there as retrieval distances, not
-probabilities. Quick-reply buttons after a clarification or a conflict
-fill in the request the answer asks for (for example "security in
-Terminal 1", or the same question without the photo) and send it through
-the same path as a typed one. The layout was reworked after the blind
-evaluations (see `docs/checkpoints/05_0_ui_presentation.md`); no
-retrieval, routing, threshold, knowledge-base or model code changed.
+The page shows the session as a conversation. Each request is routed from
+the current text, photo and audio; the one thing carried over is the
+previous turn's unresolved clarification (its category, terminal and zone),
+which a short follow-up such as "What about Terminal 2?" completes. A
+complete new question ignores it, anything but a clarification clears it,
+and "Clear conversation" drops both the transcript and that context. The
+answer is two to four sentences about what was asked (where, hours,
+accessibility, directions) with a compact fact row (location, hours,
+access, route) drawn from the selected record; every field of the record,
+the retrieval route and the similarity numbers sit under "Evidence &
+details", where the numbers are described as retrieval distances, not
+probabilities. The status next to every answer is a symbol plus words, so
+colour is never the only signal. Quick-reply buttons after a clarification
+or a conflict send the follow-up the answer asks for through the same path
+as typed text. Layout notes: `docs/checkpoints/05_0_ui_presentation.md`
+(presentation rework) and `04_6_final_usability_hardening.md` (concise
+answers, follow-up context, recorder layout).
 
 ## Running the vision and speech pipelines
 

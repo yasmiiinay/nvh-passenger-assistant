@@ -101,7 +101,7 @@ def test_time_and_deictic(gaz):
     ex = extract("Is the lounge open right now?", gaz)
     assert values(ex, "time") == ["right now"]
     assert values(ex, "service") == ["the lounge"]
-    assert values(extract("Can you book me a taxi for 6pm?", gaz), "time") == ["6pm"]
+    assert values(extract("Can you book me a taxi for 6pm?", gaz), "clock_time") == ["18:00"]   # explicit clock (04.6)
     assert values(extract("What does this sign mean?", gaz), "deictic_ref") == ["this sign"]
 
 

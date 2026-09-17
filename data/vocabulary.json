@@ -64,5 +64,29 @@
   "decision_outcomes": ["answer", "clarify", "abstain", "redirect"],
   "volatility_values": ["low", "medium", "high"],
   "query_types": ["precise", "paraphrase", "vague", "deictic", "ambiguous", "out_of_scope", "volatile", "conflict_text_side", "non_english"],
-  "splits": ["dev", "heldout"]
+  "splits": ["dev", "heldout"],
+
+  "query_interpretation": {
+    "_note": "Added in usability hardening 04.6 (after both blind evaluations). Small, airport-specific word lists read by src/entities.py; they constrain retrieval and never add facts. Each list is a documented failure class, not a lookup table of diagnostic sentences.",
+    "location_prepositions": ["near", "beside", "next to", "by", "opposite", "at", "from", "close to", "around", "outside", "in front of", "behind", "after", "before", "past", "through", "beyond"],
+    "zone_phrases": {
+      "airside": ["airside", "after security", "past security", "passed security", "through security", "beyond security", "once through security", "at the gates", "gate area"],
+      "landside": ["landside", "before security", "not through security", "not yet through security"],
+      "arrivals": ["arrivals", "arrival hall", "arrivals hall", "just landed", "have landed", "landed", "arriving", "just arrived", "have arrived", "arrived", "on arrival"],
+      "departures": ["departures", "departure hall", "departures hall", "departing", "flying out", "before my flight", "about to fly"]
+    },
+    "service_families": {
+      "accessibility": ["special assistance", "wheelchair", "wheelchairs", "reduced mobility", "mobility assistance", "mobility help", "prm", "assistance point", "disabled", "disability", "cannot walk far", "can not walk far", "walking difficulty", "step free", "step-free"],
+      "medical": ["sick", "ill", "unwell", "injured", "injury", "hurt", "medical", "first aid", "nurse", "doctor", "medic", "medicine", "faint", "fainted", "bleeding"]
+    },
+    "service_synonyms": {
+      "_note": "Single-service nouns that name exactly one KB record but are not among its aliases; treated like aliases (the KB itself is frozen). Keep tiny.",
+      "rail_station": ["train", "trains", "railway", "the train", "a train", "rail station", "the station"],
+      "taxi_rank_t1": ["taxi", "cab", "a taxi", "a cab"],
+      "lost_property_t1": ["lost my", "i lost", "i have lost", "misplaced", "lost something", "lost an item", "lost items"]
+    },
+    "transfer_phrases": ["between terminals", "between the terminals", "change terminal", "change terminals", "terminal transfer", "transfer terminal", "other terminal", "the other terminal", "switch terminal", "switch terminals", "connect to terminal"],
+    "unsupported_services": ["locker", "lockers", "luggage storage", "baggage storage", "left luggage storage", "atm", "cash machine", "cashpoint", "currency exchange", "bureau de change", "exchange money", "pharmacy", "chemist", "smoking area", "smoking room", "smoke", "prayer room", "chapel", "mosque", "duty free", "shops", "shopping", "souvenir", "electronics", "phone charger", "charging point", "charging station", "hotel", "hotels", "shower", "showers", "car rental", "car hire", "rent a car", "post office", "playground", "play area", "kids area", "wifi", "wi fi", "police", "customs", "immigration", "passport control", "visa", "luggage wrapping", "bag wrapping", "trolley", "trolleys", "pet", "pets", "vending machine"],
+    "fragment_lead_ins": ["what about", "how about", "and", "also", "same for", "same in", "what of", "and for", "or", "the other", "other one", "instead", "then", "ok", "okay", "please", "thanks", "thank you"]
+  }
 }

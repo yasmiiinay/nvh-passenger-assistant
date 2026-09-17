@@ -71,7 +71,7 @@ def test_alias_answer_against_strong_different_image_is_a_conflict(ctx):
     assert out.decision == "conflict" and out.conflict and out.route == "text_leads"
     assert set(out.candidates) == {"lounge_aurora", "restaurant_skyline", "cafe_harbour"}
     body = render_outcome(out, ctx.gaz)
-    assert "which one do you mean" in body and "Aurora Lounge" in body
+    assert "which one do you mean" in body.lower() and "Aurora Lounge" in body
 
 
 def test_alias_answer_with_agreeing_image_is_reinforced(ctx):
@@ -150,7 +150,8 @@ def test_voice_transcript_is_the_text_path(ctx):
     t = text("answer", "gates_pier_b", entities={"gate_id": "B12"})
     out = apply_rules(t, None, audio(), ctx, typed=False)
     assert out.route == "voice_only" and out.modalities == ["voice"]
-    assert 'I heard: "where is gate b12"' in render_outcome(out, ctx.gaz)
+    shown = render_outcome(out, ctx.gaz)
+    assert "Pier B Gates" in shown and "I heard" not in shown     # the transcript is shown by the interface (04.6)
 
 
 def test_action_request_flag_is_set_at_routing_time(ctx):
@@ -185,7 +186,7 @@ def test_uncertain_image_does_not_override_text_that_offers_candidates(ctx):
     assert out.candidates == ["baggage_reclaim_t1", "baggage_reclaim_t2"]
     assert "image_uncertain" in out.flags and "image_uncertain_agrees" in out.flags and not out.conflict
     shown = render_outcome(out, ctx.gaz)
-    assert "Which of these do you mean?" in shown and "most likely shows a baggage" in shown
+    assert "Which of these do you mean" in shown and "most likely shows a baggage" in shown
     assert "transport" not in shown and "accessibility" not in shown
 
 

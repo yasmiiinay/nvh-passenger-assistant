@@ -49,7 +49,7 @@ def test_quick_replies_only_for_terminal_clarify_and_conflict():
     clarify.text = object()
     replies = ui.quick_replies(clarify, Gaz(), "where is security", None)
     assert [r["label"] for r in replies] == ["Terminal 1", "Terminal 2"]
-    assert replies[0]["text"] == "security in Terminal 1"      # the same example the answer text gives
+    assert replies[0]["text"] == "Terminal 1"      # the short follow-up the pending clarification completes
     conflict = Outcome(route="text_leads", decision="conflict", conflict=True)
     replies = ui.quick_replies(conflict, Gaz(), "baggage reclaim", "/tmp/sign.png")
     assert [r["label"] for r in replies] == ["Use my question", "Use the photo"]
@@ -57,25 +57,26 @@ def test_quick_replies_only_for_terminal_clarify_and_conflict():
     assert ui.quick_replies(Outcome(route="text_only", decision="answer"), Gaz(), "x", None) == []
 
 
-def test_fact_chips_only_restate_what_the_answer_text_says():
-    """A chip may shorten a fact from the selected record, never add one."""
+def test_fact_row_shows_labelled_fields_of_the_selected_record_only():
+    """Rule G (04.6): each fact item is icon + text label + a field of the
+    record the outcome selected; nothing when nothing was selected."""
     from src.entities import load_gazetteers
-    from src.responses import _record_text
     from configs.settings import SETTINGS
     import re
     gaz = load_gazetteers(SETTINGS.kb_path, SETTINGS.vocabulary_path)
     for rid, record in gaz.records.items():
-        answer = " ".join(_record_text(record, gaz))
-        outcome = Outcome(route="text_only", decision="answer", matched_record_id=rid)
-        for chip in ui.fact_chips(outcome, gaz)[1:]:           # [0] names the evidence route, not a record fact
-            words = re.sub(r"<[^>]+>", "", chip)
-            if words.startswith("Open "):
-                assert words[5:].replace(" – ", "-") in answer, (rid, words)
-            elif words == "Step-free access":
-                assert "step-free access" in answer, rid
-            else:
-                for part in words.split(" · "):
-                    assert part in answer, (rid, part)
+        row = ui.fact_row(Outcome(route="text_only", decision="answer", matched_record_id=rid), gaz)
+        assert 'aria-hidden="true"' in row and "Location:" in row
+        assert html_unescape(record["zone"]) in row
+        for label in ("Hours:", "Access:", "Route:"):
+            if label in row:
+                assert re.search(r'<span class="fact-label">' + label + "</span>", row)
+    assert ui.fact_row(Outcome(route="text_only", decision="clarify", candidates=["gates_pier_b"]), gaz) == ""
+
+
+def html_unescape(text: str) -> str:
+    import html as html_module
+    return html_module.escape(text)
 
 
 @pytest.fixture(scope="module")
@@ -99,16 +100,44 @@ def test_text_turn_and_ticket(models_ready, tmp_path, monkeypatch):
     assert "NVH-" in note and "Departures information desk" in note
 
 
-def test_turns_are_independent_but_stay_on_screen(models_ready, tmp_path, monkeypatch):
+def test_turns_stay_on_screen_and_a_terminal_follow_up_completes_the_clarification(models_ready, tmp_path, monkeypatch):
     monkeypatch.setattr(event_log, "EVENTS_PATH", tmp_path / "events.jsonl")
     first = ui.run_turn("Where is security?", None, None, {})
     assert [q["label"] for q in first["quick"]] == ["Terminal 1", "Terminal 2"]
-    second = ui.run_turn(first["quick"][0]["text"], None, None, first["session"])
+    assert first["session"]["pending"] == {"category": "security", "terminal": None, "zones": []}
+    assert "Pending clarification" in first["evidence"]
+    second = ui.run_turn(first["quick"][1]["text"], None, None, first["session"])      # "Terminal 2"
     assert len(second["session"]["history"]) == 2 and second["session"]["turn"] == 2
     assert "Where is security?" in second["conversation"]      # earlier turn still shown
-    assert "Terminal 1" in second["session"]["history"][-1]["passenger"]
-    assert ui.HISTORY_NOTE not in second["evidence"]      # stated once, in the session-history bar
-    assert "Record facts" in ui.run_turn("Where is gate B12?", None, None, {})["evidence"]
+    assert "Security, Terminal 2" in second["conversation"] and "Follow-up context" in second["evidence"]
+    assert second["session"]["pending"] is None                # an answer leaves nothing behind
+    assert ui.HISTORY_NOTE not in second["evidence"]           # stated once, in the session-history bar
+    third = ui.run_turn("Terminal 1", None, None, second["session"])     # two turns later: no context
+    assert "What would you like to find in Terminal 1?" in third["conversation"]
+
+
+def test_a_full_question_ignores_the_pending_context_and_clear_drops_it(models_ready, tmp_path, monkeypatch):
+    monkeypatch.setattr(event_log, "EVENTS_PATH", tmp_path / "events.jsonl")
+    first = ui.run_turn("Where is security in Terminal 1?", None, None, {})
+    assert first["session"]["pending"]["category"] == "security"
+    second = ui.run_turn("Where is gate B12?", None, None, first["session"])
+    assert "Pier B Gates" in second["conversation"] and "Follow-up context" not in second["evidence"]
+    again = ui.run_turn("Where is security in Terminal 1?", None, None, second["session"])
+    assert again["session"]["pending"]["category"] == "security"
+    cleared = dict(again["session"], pending=None, history=[])
+    assert ui.run_turn("What about Terminal 2?", None, None, cleared)["session"]["pending"]["terminal"] == "Terminal 2"
+    assert "What would you like to find in Terminal 2?" in ui.run_turn("What about Terminal 2?", None, None, cleared)["conversation"]
+
+
+def test_answer_is_short_and_details_are_in_the_evidence_panel(models_ready, tmp_path, monkeypatch):
+    monkeypatch.setattr(event_log, "EVENTS_PATH", tmp_path / "events.jsonl")
+    result = ui.run_turn("Where is gate B12?", None, None, {})
+    import re
+    body = re.search(r'<div class="answer">(.*?)</div>', result["session"]["history"][-1]["assistant"]).group(1)
+    words = re.sub(r"<[^>]+>", " ", body).split()
+    assert len(words) <= 90 and "Source" not in body and "last verified" not in body
+    assert "Description" in result["evidence"] and "last verified" in result["evidence"]
+    assert 'class="facts"' in result["session"]["history"][-1]["assistant"]
 
 
 def test_history_note_is_on_the_page():

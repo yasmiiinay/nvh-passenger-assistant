@@ -85,6 +85,9 @@ def test_volatile_intent_redirects(gaz, index):
 def test_out_of_scope_abstains(gaz, index):
     r = resolve("What is the wifi password?", gaz, index, SETTINGS.thresholds())
     assert r.decision == "abstain" and r.matched_record_id is None
+    assert "unsupported_service" in r.flags      # named service the KB does not hold (04.6)
+    r = resolve("Where can I get my shoes repaired?", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "abstain" and r.matched_record_id is None
     assert r.match_score < SETTINGS.tau_low
 
 
@@ -105,9 +108,12 @@ def test_terminal_in_the_text_narrows_before_asking(gaz, index):
 
 
 def test_mixed_category_candidates_are_listed_not_asked_by_terminal(gaz, index):
-    r = resolve("information desk arrivals", gaz, index, SETTINGS.thresholds())
+    r = resolve("information desk in the departures hall or arrivals", gaz, index, SETTINGS.thresholds())
     assert r.decision == "clarify" and r.clarification_field is None
     assert len(r.candidates) == 2
+    # "arrivals" alone is a journey-stage zone and narrows to the arrivals desk (04.6)
+    r = resolve("information desk arrivals", gaz, index, SETTINGS.thresholds())
+    assert r.candidates == ["info_desk_t1_arrivals"]
 
 
 def test_tied_by_terminal_rule():
@@ -127,9 +133,14 @@ def test_offered_candidates_follow_the_margin_rule():
 
 
 def test_assistance_policy_answers(gaz, index):
-    r = resolve("I need wheelchair assistance", gaz, index, SETTINGS.thresholds())
+    # with a terminal the nearest designated point is answered, not asked about
+    r = resolve("I need wheelchair assistance in terminal 1", gaz, index, SETTINGS.thresholds())
     assert r.decision == "answer" and "assist_policy" in r.flags
     assert gaz.records[r.matched_record_id]["category"] == "accessibility"
+    # without any location the terminal is the one thing asked (04.6)
+    r = resolve("I need wheelchair assistance", gaz, index, SETTINGS.thresholds())
+    assert r.decision == "clarify" and r.clarification_field == "terminal"
+    assert {gaz.records[rid]["category"] for rid in r.candidates} == {"accessibility"}
 
 
 def test_live_information_record_is_never_an_answer(gaz, index):
@@ -175,8 +186,8 @@ def test_similarity_alone_does_not_answer_without_a_recognised_intent(gaz, index
     assert r.decision == "answer" and r.matched_record_id == "lounge_aurora" and r.match_score >= SETTINGS.tau_high
     r = resolve("Check-in desks Terminal 2", gaz, index, SETTINGS.thresholds())
     assert r.decision == "answer" and r.matched_record_id == "checkin_t2"
-    # a confident intent keeps its semantic answer
-    r = resolve("my mother needs a wheelchair", gaz, index, SETTINGS.thresholds())
+    # a confident intent keeps its semantic answer once the terminal is known
+    r = resolve("my mother needs a wheelchair, we are in terminal 1", gaz, index, SETTINGS.thresholds())
     assert r.decision == "answer" and r.matched_record_id == "prm_point_t1_entrance"
 
 

@@ -5,12 +5,14 @@ photo, a voice clip), routes it through src.router and renders the outcome.
 Models are loaded on the first question, not at import, so the Space starts
 quickly and a modality that is never used is never loaded.
 
-The page shows the session as a conversation, but every request is processed
-on its own: the router only ever sees the current text, photo and audio.
-Earlier turns stay on screen for reference and are never appended to a new
-request. Quick-reply buttons are a convenience that fill in a new request
-(for example "security in Terminal 1") and send it through the same path as
-a typed one.
+The page shows the session as a conversation. Each request is routed from
+the current text, photo and audio; the only thing carried from one turn to
+the next is the previous turn's unresolved clarification (category,
+terminal, zone: `Outcome.pending_next`), which a short follow-up such as
+"what about terminal 2?" completes (04.6). Earlier turns stay on screen for
+reference and are never appended to a new request; "Clear conversation"
+drops both the transcript and that pending context. Quick-reply buttons
+fill in a new request and send it through the same path as a typed one.
 
 Run locally:  python app/app.py
 """
@@ -19,7 +21,6 @@ from __future__ import annotations
 import base64
 import html
 import io
-import re
 import sys
 import time
 import traceback
@@ -31,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from configs.settings import SETTINGS
 from src.entities import load_gazetteers
 from src.event_log import event_from_outcome, log_event, new_session_id, open_ticket
-from src.responses import render_outcome
+from src.responses import compact_facts, record_details, render_outcome
 from src.retrieval import RetrievalResult, build_text_index
 from src.router import Outcome, build_context, route
 
@@ -54,8 +55,8 @@ SUBTITLE = "Ask about gates, baggage, transport and airport services."
 SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven Assistant is not a live agent "
               "and does not show live flight status. Demonstration system for a fictional airport; "
               "all information is synthetic.")
-HISTORY_NOTE = ("Shown for reference only. The assistant keeps no memory of earlier turns; "
-                "each request is processed independently.")
+HISTORY_NOTE = ("Earlier messages are shown for reference. A short follow-up may use the immediately "
+                "preceding clarification; otherwise requests are processed independently.")
 EXAMPLES = ["Where is gate B12?", "Where can I collect my baggage?", "How do I get to Terminal 2?",
             "What does this sign mean?"]
 QUICK_REPLY_SLOTS = 3
@@ -128,9 +129,12 @@ def evidence_rows(outcome: Outcome, gaz) -> list[tuple[str, str]]:
         rows.append(("Similarity", f"{outcome.score:.2f} · {outcome.band or 'not banded'}"))
     if outcome.matched_record_id:
         rows.append(("Matched record", outcome.matched_record_id))
-        facts = [chip_text(c) for c in fact_chips(outcome, gaz)[1:]]
-        if facts:
-            rows.append(("Record facts", "; ".join(facts)))
+        rows.extend(record_details(gaz.records[outcome.matched_record_id], gaz)[1:])
+    if outcome.text is not None and "followup_context" in outcome.flags:
+        rows.append(("Follow-up context", "this request completed the previous clarification"))
+    if outcome.pending_next:
+        kept = ", ".join(f"{k} {v}" for k, v in outcome.pending_next.items() if v)
+        rows.append(("Pending clarification", f"kept for one turn: {kept}"))
     if outcome.candidates:
         rows.append(("Candidates", ", ".join(gaz.records[r]["name"] for r in outcome.candidates if r in gaz.records)))
     if outcome.conflict:
@@ -160,42 +164,32 @@ def status_key(outcome: Outcome) -> str:
     return outcome.band or "no reliable match"
 
 
-def chip_text(chip_html: str) -> str:
-    return re.sub(r"<[^>]+>", "", chip_html).strip()
-
-
 def status_chip(key: str) -> str:
     symbol, words, cls = STATUS[key]
     return f'<span class="chip {cls}"><span aria-hidden="true">{symbol}</span> {words}</span>'
 
 
-def fact_chips(outcome: Outcome, gaz) -> list[str]:
-    """Short facts next to the status. Rule: a chip may restate, in a shorter
-    form, only what the answer text already says about the selected record
-    (terminal and zone, opening hours, step-free access, all printed by
-    src.responses._record_text); it never adds a claim the answer does not
-    make. The test suite checks this against every knowledge-base record."""
-    chips = [f'<span class="chip">From {html.escape(ROUTE_LABELS.get(outcome.route, outcome.route))}</span>']
+def fact_row(outcome: Outcome, gaz, response: str = "") -> str:
+    """Compact facts under a short answer: icon plus text label plus a KB
+    field of the record the outcome selected (rule G, 04.6). Nothing here
+    influences routing; the values come from src.responses.compact_facts.
+    A fact the answer sentence already states word for word is left out."""
     record = gaz.records.get(outcome.matched_record_id) if outcome.decision == "answer" else None
-    if record:
-        place = " · ".join(p for p in (record.get("terminal"), record.get("zone")) if p)
-        if place:
-            chips.append(f'<span class="chip">{html.escape(place)}</span>')
-        hours = (record.get("opening_hours") or {}).get("mon_sun")
-        if hours:
-            chips.append(f'<span class="chip">Open {html.escape(hours.replace("-", " – "))}</span>')
-        if (record.get("accessibility") or {}).get("step_free"):
-            chips.append('<span class="chip">Step-free access</span>')
-    return chips
+    if not record:
+        return ""
+    items = "".join(f'<li><span class="fact-icon" aria-hidden="true">{icon}</span>'
+                    f'<span class="fact-label">{html.escape(label)}:</span> {html.escape(value)}</li>'
+                    for icon, label, value in compact_facts(record) if value not in response)
+    return f'<ul class="facts">{items}</ul>'
 
 
 def quick_replies(outcome: Outcome, gaz, text: str | None, image_path: str | None) -> list[dict]:
     """Buttons that build the next request for the passenger. Each one is a
-    fresh request through the same pipeline; nothing is remembered."""
+    fresh request through the same pipeline; a terminal button is the short
+    follow-up the pending clarification completes."""
     if outcome.decision == "clarify" and outcome.clarification_field == "terminal" and outcome.text is not None:
-        category = gaz.records[outcome.candidates[0]]["category"].replace("_", "-")
         terminals = sorted({gaz.records[rid]["terminal"] for rid in outcome.candidates})
-        return [{"label": t, "text": f"{category} in {t}"} for t in terminals]
+        return [{"label": t, "text": t} for t in terminals]
     if (outcome.decision == "clarify" and outcome.text is not None and "deictic" not in outcome.flags
             and 0 < len(outcome.candidates) <= QUICK_REPLY_SLOTS):
         names = [gaz.records[rid]["name"] for rid in outcome.candidates]
@@ -240,16 +234,14 @@ def passenger_html(text: str | None, image_path: str | None, transcript: str | N
     return "".join(parts)
 
 
-def assistant_html(response: str, key: str, chips: list[str]) -> str:
+def assistant_html(response: str, key: str, route: str, facts: str = "") -> str:
     paragraphs = "".join(f"<p>{html.escape(p)}</p>" for p in response.split("\n") if p.strip())
     if key == "redirect":
         body = (f'<div class="official"><div class="role">Official information</div>{paragraphs}</div>')
     else:
         body = f'<div class="answer">{paragraphs}</div>'
-    # the metadata line carries the status, the evidence route and the place;
-    # hours and access details stay in the evidence panel
-    meta = " · ".join(chip_text(c) for c in chips[:2])
-    return (f'<div class="turn turn--assistant"><div class="role">Nordhaven Assistant</div>{body}'
+    meta = "From " + html.escape(ROUTE_LABELS.get(route, route))
+    return (f'<div class="turn turn--assistant"><div class="role">Nordhaven Assistant</div>{body}{facts}'
             f'<div class="meta">{status_chip(key)}<span class="meta-text">{meta}</span></div></div>')
 
 
@@ -278,7 +270,7 @@ def run_turn(text, image_path, audio_path, session) -> dict:
     start = time.perf_counter()
     try:
         ctx = get_context()
-        outcome = route(text, image_path, audio_path, ctx)
+        outcome = route(text, image_path, audio_path, ctx, pending=session.get("pending"))
         response = render_outcome(outcome, ctx.gaz)
     except Exception as exc:                       # the interface must never show a traceback
         traceback.print_exc()
@@ -292,12 +284,13 @@ def run_turn(text, image_path, audio_path, session) -> dict:
         log_event(event_from_outcome(outcome, session["session_id"], session["turn"], time.perf_counter() - start))
         evidence = evidence_html(outcome, gaz)
     key = status_key(outcome)
-    chips = fact_chips(outcome, gaz) if gaz is not None else []
+    facts = fact_row(outcome, gaz, response) if gaz is not None else ""
     transcript = ""
     if outcome.speech is not None:
         transcript = outcome.speech.transcript_raw or ""
     session["history"].append({"passenger": passenger_html(text, image_path, transcript, bool(audio_path)),
-                               "assistant": assistant_html(response, key, chips)})
+                               "assistant": assistant_html(response, key, outcome.route, facts)})
+    session["pending"] = outcome.pending_next      # one turn only: replaced by every request
     session["last"] = {"decision": outcome.decision, "record_id": outcome.matched_record_id,
                        "candidates": list(outcome.candidates), "conflict": outcome.conflict,
                        "terminal": outcome.text.entities.get("terminal") if outcome.text is not None else None}
@@ -381,6 +374,10 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 .answer, .answer p { font-size: 16px; line-height: 1.55; max-width: 68ch; margin: 0; }
 .answer p + p { margin-top: 10px; }
 .muted { color: var(--muted); }
+.facts { list-style: none; margin: 2px 0 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: #3a3737; }
+.facts li { display: inline-flex; align-items: baseline; gap: 6px; max-width: 100%; }
+.fact-icon { font-size: 14px; }
+.fact-label { font-weight: 700; color: var(--ink); }
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-top: 2px; }
 .meta-text { line-height: 1.4; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 9px;
@@ -432,8 +429,15 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
         flex: 0 0 auto !important; padding: 0 22px; align-self: flex-end; }
 #send:hover { background: #dd2b0f; }
 #attachments { align-items: stretch; max-width: 720px; }
+#attachments { align-items: flex-start; }
 #attachments > .block, #photo, #voice { min-height: 0 !important; height: 150px !important; max-height: 150px !important;
                         background: var(--bg) !important; border: 1px solid var(--rule) !important; overflow: hidden; }
+/* the recorder grows while recording so Stop, the timer and the waveform stay reachable (H1) */
+#voice { height: auto !important; max-height: none !important; min-height: 150px !important; overflow: visible; }
+#voice .controls, #voice .audio-container, #voice .component-wrap { overflow: visible; }
+/* Gradio's clear icon is the only reliable way to discard a recording, so it stays; visually secondary (H2) */
+#voice .icon-button-wrapper, #photo .icon-button-wrapper { opacity: .55; }
+#voice .icon-button-wrapper:hover, #photo .icon-button-wrapper:hover { opacity: 1; }
 #photo .upload-container, #photo .upload-container > button { height: 100% !important; max-height: 148px !important; }
 #attachments .label-wrap, #attachments label { font-size: 12px; }
 #photo .upload-container, #photo .image-container { height: 100%; }
@@ -448,7 +452,8 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
   #composer .row, #quick .row, #examples .row, #history-bar, #attachments { flex-direction: column; align-items: stretch; }
   #send { align-self: stretch; }
   .turn--user .bubble { max-width: 100%; }
-  #attachments > .block, #photo, #voice { height: 140px !important; max-height: 140px !important; }
+  #attachments > .block, #photo { height: 140px !important; max-height: 140px !important; }
+  #voice { height: auto !important; max-height: none !important; min-height: 140px !important; }
   .ev-grid { grid-template-columns: 1fr; }
   .ev-row { grid-template-columns: 1fr; gap: 2px; }
   #send { width: 100% !important; }
@@ -538,7 +543,8 @@ def build_ui() -> gr.Blocks:
             return to_outputs(run_turn(label, None, None, session))
 
         def on_clear(session):
-            kept = {"session_id": (session or {}).get("session_id", new_session_id())}
+            # a fresh transcript and no pending clarification; the session id stays for the event log
+            kept = {"session_id": (session or {}).get("session_id", new_session_id()), "pending": None}
             return to_outputs({"conversation": conversation_html([]), "notice": "", "transcript": "",
                                "evidence": "", "quick": [], "session": kept})
 
