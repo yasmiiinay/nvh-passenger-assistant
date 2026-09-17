@@ -175,3 +175,14 @@ def test_unreadable_image_is_handled(models_ready, tmp_path, monkeypatch):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+def test_evidence_summary_lists_no_options_for_a_sign_that_cannot_be_read():
+    class Gaz:
+        records = {"a": {"name": "Baggage Reclaim, Terminal 1"}}
+    out = Outcome(route="image_only", decision="clarify", candidates=["a"], band="uncertain",
+                  flags=["image_uncertain", "image_text_sign"])
+    labels = [label for label, _ in ui.evidence_summary(out, Gaz())]
+    assert "Options" not in labels
+    out.flags = ["image_uncertain"]
+    assert "Options" in [label for label, _ in ui.evidence_summary(out, Gaz())]

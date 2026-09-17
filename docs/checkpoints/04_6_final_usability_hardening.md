@@ -220,6 +220,7 @@ unchanged.
 | Terminal quick replies missing after a photo clarification | I1, I3, I5 | photo clarifications carry the one-turn pending context |
 | Terminal question asked when every candidate serves both terminals | I4 | the candidates are listed instead |
 | Sign whose meaning is in text offered two unrelated categories | N1, N3 | nearest anchor is the printed-document anchor → ask what the sign says |
+| Uncertain photo carried its guessed category into the next turn; evidence listed baggage options for an unreadable sign | Chrome re-check, N1 | an uncertain photo leaves no clarification context; "Options" hidden when the sign cannot be read (flag `image_text_sign` now set by the router; metrics unchanged, the flag appears in the flags column of mm_023 and mm_122) |
 | Quality note shown on a strong photo match | I7 | note only when the band is not strong |
 | First aid described as "the nearest designated assistance point" | I8 | assistance sentence only for accessibility records |
 | Article and capitalisation in image wording ("a accessibility sign") | N4 | article and label helpers |
@@ -230,7 +231,7 @@ unchanged.
 Regression after round 2 (snapshot `after_046_4`) is identical to round 1:
 text dev 37/43, held-out 29/36 (0 wrong records), QA regression 11/15;
 multimodal dev 28/35, held-out 26/33, routing 0.970, conflict 5/0/0,
-multimodal regression 13/13; speech WER unchanged. Full suite: 304 passed.
+multimodal regression 13/13; speech WER unchanged. Full suite: 306 passed.
 "Sacred North" now abstains: the right outcome would be Security North, but
 the transcript's similarity (0.21) is below the abstain threshold, so the
 change turns a wrong clarification into a safe refusal rather than a correct

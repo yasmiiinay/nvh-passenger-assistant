@@ -183,7 +183,7 @@ def evidence_summary(outcome: Outcome, gaz) -> list[tuple[str, str]]:
             ("Why", plain_reason(outcome))]
     if outcome.matched_record_id:
         rows.append(("Matched place", gaz.records[outcome.matched_record_id]["name"]))
-    elif outcome.candidates:
+    elif outcome.candidates and "image_text_sign" not in outcome.flags:
         names = [gaz.records[r]["name"] for r in outcome.candidates if r in gaz.records]
         rows.append(("Options", ", ".join(names[:5]) + (" …" if len(names) > 5 else "")))
     if outcome.band:

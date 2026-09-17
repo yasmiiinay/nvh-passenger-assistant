@@ -451,14 +451,12 @@ def render_outcome(outcome, gaz) -> str:
         return "\n".join(lines)
 
     category = outcome.image_category
+    vision = outcome.vision
     if outcome.decision == "clarify":
-        vision = outcome.vision
-        text_sign = vision is not None and "printed document" in vision.best_anchor[0]
-        if "image_uncertain" in outcome.flags and text_sign:
+        if "image_text_sign" in outcome.flags:
             # a sign whose meaning is in its words ("Gate C7", "Departures"):
             # the system cannot read it, so it asks rather than naming two
             # categories that are both guesses (04.6)
-            outcome.flags.append("image_text_sign")
             lines.append("This looks like a sign with writing on it, which I cannot read. "
                          "What does it say, or what are you looking for?")
         elif "image_no_clear_leader" in outcome.flags:

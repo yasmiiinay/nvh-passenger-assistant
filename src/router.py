@@ -226,6 +226,9 @@ def _image_leads(out: Outcome, vision: VisionResult, text: RetrievalResult | Non
         out.flags.append("image_uncertain")
         if vision.category_margin < ctx.vision_thresholds["vision_margin_delta"]:
             out.flags.append("image_no_clear_leader")
+        if "printed document" in vision.best_anchor[0]:
+            # meaning carried by words the system cannot read ("Gate C7")
+            out.flags.append("image_text_sign")
         out.reason = f"image band uncertain: top categories {[c for c, _ in vision.category_ranking]}"
         return out
     if len(records) == 1:
@@ -400,11 +403,13 @@ def route(text: str | None, image_path: str | Path | None, audio_path: str | Pat
         out.flags.append("input_error")
     # only a clarification that still stands leaves context behind; an answer,
     # a redirect, an abstention or a conflict clears it. A photo that named one
-    # category leaves that category, so "Terminal 1" can complete it (04.6)
+    # category leaves that category, so "Terminal 1" can complete it (04.6).
+    # An uncertain photo leaves nothing: its category is a guess, and the
+    # passenger's next words should not be narrowed by it
     out.pending_next = None
     if out.decision == "clarify":
         if out.route in ("image_only", "image_leads") and out.image_category and \
-                "image_no_clear_leader" not in out.flags:
+                "image_uncertain" not in out.flags:
             terminal = text_result.entities.get("terminal") if text_result is not None else None
             out.pending_next = {"category": out.image_category, "terminal": terminal, "zones": []}
         else:

@@ -284,3 +284,16 @@ def test_quality_note_only_when_the_photo_is_not_a_strong_match(ctx):
     assert "looks bright" not in render_outcome(apply_rules(None, strong, None, ctx), ctx.gaz)
     weak = image("restroom", "uncertain", ["restrooms_t2"], flags=["bright"])
     assert "looks bright" in render_outcome(apply_rules(None, weak, None, ctx), ctx.gaz)
+
+
+def test_an_uncertain_photo_leaves_no_context_for_the_next_turn(ctx, monkeypatch):
+    import src.router as router_module
+    written = image("baggage", "uncertain", ["baggage_reclaim_t1", "baggage_reclaim_t2"])
+    written.best_anchor = ("a boarding pass or printed document", 0.27)
+    monkeypatch.setattr(router_module, "image_evidence", lambda path, c: written)
+    out = router_module.route(None, "sign.jpg", None, ctx)
+    assert out.decision == "clarify" and "image_text_sign" in out.flags
+    assert out.pending_next is None
+    strong = image("restroom", "strong match", ["restrooms_t1_arrivals", "restrooms_t2"])
+    monkeypatch.setattr(router_module, "image_evidence", lambda path, c: strong)
+    assert router_module.route(None, "sign.jpg", None, ctx).pending_next is not None
