@@ -15,7 +15,8 @@ from evaluation.retrieval_metrics import judge_outcome
 from src.entities import load_gazetteers
 from src.foundation_audit import load_queries
 from src import retrieval
-from src.retrieval import (STAGE_CATEGORY, STAGE_FULL_KB, candidate_records, decide, offered_candidates, tied_by_terminal,
+from src.retrieval import (STAGE_CATEGORY, STAGE_FULL_KB, RetrievalResult, candidate_records, decide, has_flight_context,
+                           offered_candidates, tied_by_terminal,
                            resolve, resolve_deterministic)
 
 
@@ -177,3 +178,30 @@ def test_similarity_alone_does_not_answer_without_a_recognised_intent(gaz, index
     # a confident intent keeps its semantic answer
     r = resolve("my mother needs a wheelchair", gaz, index, SETTINGS.thresholds())
     assert r.decision == "answer" and r.matched_record_id == "prm_point_t1_entrance"
+
+
+# ---- QA 04.5 change 1: a semantic flight-status redirect needs flight words ----
+
+@pytest.mark.parametrize("query", ["What time is the last shuttle bus tonight?",
+                                   "Does the first train leave before six in the morning?",
+                                   "Until when do the buses keep running?"])
+def test_timetable_wording_without_flight_words_is_not_redirected(gaz, index, query):
+    r = resolve(query, gaz, index, SETTINGS.thresholds())
+    assert r.decision != "redirect" and "volatile" not in r.flags
+    assert r.matched_record_id != "flight_information"
+
+
+@pytest.mark.parametrize("query", ["is my plane delayed tonight", "has boarding begun for the evening departures",
+                                   "my flight got cancelled what now"])
+def test_flight_status_wording_still_redirects(gaz, index, query):
+    r = resolve(query, gaz, index, SETTINGS.thresholds())
+    assert r.decision == "redirect" and "volatile" in r.flags
+
+
+def test_flight_context_words():
+    r = RetrievalResult(query="", normalized="when do the buses run", entities={}, resolved=False)
+    assert not has_flight_context(r)
+    r.normalized = "is the plane late"
+    assert has_flight_context(r)
+    r = RetrievalResult(query="", normalized="", entities={"flight_ref": "NH 123"}, resolved=False)
+    assert has_flight_context(r)

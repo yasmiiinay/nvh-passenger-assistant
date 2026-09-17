@@ -325,6 +325,19 @@ def tied_by_terminal(ranked: list[tuple[str, float]], margin_delta: float, gaz: 
     return tied
 
 
+# Content words of the ask_flight_status exemplars (plus inflections). A
+# flight-status redirect from the semantic stage needs one of them, a flight
+# code or a volatile phrase; "when do the first and last trains run" must
+# not be sent to the flight boards because it resembles "when does boarding
+# begin" (QA 04.5).
+FLIGHT_CONTEXT_WORDS = {"flight", "flights", "plane", "boarding", "delayed", "delay", "cancelled", "departing"}
+
+
+def has_flight_context(result: RetrievalResult) -> bool:
+    words = set(result.normalized.split())
+    return bool(words & FLIGHT_CONTEXT_WORDS) or "flight_ref" in result.entities or "volatile" in result.flags
+
+
 def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex, thresholds: dict,
                      filter_mode: str = "intent", query_vec: np.ndarray | None = None) -> RetrievalResult:
     """Semantic stages for a query the deterministic stages left unresolved.
@@ -342,13 +355,21 @@ def resolve_semantic(result: RetrievalResult, gaz: Gazetteers, index: TextIndex,
     result.intent_exemplar = prediction["exemplar"]
 
     if result.intent != NO_INTENT and gaz.vocabulary["intents"][result.intent]["volatility"] == "volatile":
-        target = next(rid for rid, r in gaz.records.items() if r.get("volatility") == "high")
-        result.flags.append("volatile")
-        return _decide(result, STAGE_NONE, "redirect",
-                       f"intent {result.intent} ({prediction['score']}): live flight data is never answered from the KB",
-                       target)
+        if has_flight_context(result):
+            target = next(rid for rid, r in gaz.records.items() if r.get("volatility") == "high")
+            result.flags.append("volatile")
+            return _decide(result, STAGE_NONE, "redirect",
+                           f"intent {result.intent} ({prediction['score']}): live flight data is never answered from the KB",
+                           target)
+        # timetable wording about trains or buses can resemble the flight-status
+        # exemplars; without flight words the intent is not trusted and the
+        # words alone pick the records (QA 04.5)
+        result.flags.append("intent_unsupported")
+        result.intent, result.intent_score = NO_INTENT, 0.0
 
     allowed, stage = candidate_records(result.intent, result.handoff, gaz, filter_mode)
+    if not has_flight_context(result):
+        allowed = [rid for rid in allowed if gaz.records[rid].get("volatility") != "high"] or allowed
     ranked = rank_records(query_vec, index, allowed)
     decision, score, margin = decide(ranked, thresholds["tau_high"], thresholds["tau_low"],
                                      thresholds["margin_delta"])
