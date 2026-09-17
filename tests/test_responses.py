@@ -84,6 +84,12 @@ def test_explicit_clock_time_is_compared_with_listed_hours(gaz):
     assert "cannot see the current time" in text and no_forbidden_claims(text)
 
 
+def test_first_aid_is_not_an_hours_question(gaz):
+    """"first" in "first aid" must not switch the answer to the hours aspect (Chrome QA, 04.6)."""
+    text = render(resolve_deterministic("I'm beside Security South and I need first aid.", gaz), gaz)
+    assert text.startswith("First Aid Room is in Terminal 1") and "listed hours" not in text
+
+
 def test_time_reference_gives_hours_but_no_open_closed_claim(gaz):
     r = resolve_deterministic("Is the lounge open right now?", gaz)
     text = render(r, gaz)

@@ -40,8 +40,9 @@ from src.retrieval import RetrievalResult, asks_live_status, is_action_request  
 SCORE_NOTE = "a similarity measure, not a probability that the answer is correct"
 BAND_FOR_SCORE = {"answer": "strong match", "clarify": "uncertain", "abstain": "no reliable match"}
 
-HOURS_WORDS = re.compile(r"\b(open|opens|opening|close|closes|closed|closing|hours|what time|until|late|early|"
-                         r"first|last)\b")
+# "first"/"last" only as "first train" / "last bus", never the "first" of "first aid"
+HOURS_WORDS = re.compile(r"\b(open|opens|opening|close|closes|closed|closing|hours|what time|when does|when is|"
+                         r"until|late|early|(?:first|last) (?:train|trains|bus|buses|shuttle|departure))\b")
 DIRECTION_WORDS = re.compile(r"\b(how do i get|how to get|way to|route|reach|walk|far|get there|directions)\b")
 ACCESS_WORDS = re.compile(r"\b(step ?free|lift|elevator|wheelchair|accessible|ramp|stairs|mobility)\b")
 CLOCK_RANGE = re.compile(r"^(\d\d):(\d\d)-(\d\d):(\d\d)(?:\s*\(.*\))?$")
@@ -189,10 +190,13 @@ def _clarify_text(result: RetrievalResult, gaz) -> str:
     if "fragment" in result.flags and not result.candidates:
         terminal = result.entities.get("terminal")
         landmark = result.entities.get("landmark")
+        zone = result.entities.get("zone")
         if terminal:
             return f"What would you like to find in {terminal}?"
         if landmark and landmark in gaz.alias_index:
             return f"What would you like to find near {gaz.records[gaz.alias_index[landmark]]['name']}?"
+        if zone:
+            return f"What would you like to find {'in ' + zone if zone in ('arrivals', 'departures') else zone}?"
         return "What would you like to find there?"
     if result.clarification_field == "terminal":
         category = gaz.records[result.candidates[0]]["category"].replace("_", "-")
@@ -221,7 +225,7 @@ def _abstain_text(result: RetrievalResult, gaz) -> list[str]:
         return lines
     if "unsupported_service" in result.flags:
         term = result.entities.get("unsupported_service", "that")
-        return [f"I don't have reliable information about {term} in this airport knowledge base. "
+        return [f"I don't have reliable information about \"{term}\" in this airport knowledge base. "
                 "Please check an information desk or official airport information."]
     if "grounded_negative" in result.flags:
         return [result.reason[0].upper() + result.reason[1:] + ".",
