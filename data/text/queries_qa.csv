@@ -13,3 +13,4 @@ qa011,lost property office in terminal 2,report_lost_item,"{""terminal"": ""Term
 qa012,Baby changing room?,,{},,out_of_scope,clarify,regression,item 4: out-of-scope service that scores above tau_high against a restroom record; a weak intent must stop the confident answer,!grounded_negative
 qa013,my mother needs a wheelchair,request_accessibility_help,{},prm_point_t1_entrance,precise,answer,regression,item 4 retention: a confident accessibility intent keeps its semantic answer,
 qa014,What is this blue sign with a figure and a bag?,identify_sign,{},,vague,clarify,regression,item 1: weak text used with a strong photo in mm_142,
+qa015,What is this place used for?,identify_sign,"{""deictic_ref"": ""this place""}",,deictic,clarify,regression,"QA 04.5 change 2: deictic determiner plus a generic noun; the photo request must fire, the noun must not act as a category cue",deictic

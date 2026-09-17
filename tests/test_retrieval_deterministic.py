@@ -180,3 +180,11 @@ def test_two_word_aliases_match_in_either_order(gaz):
     assert resolve_deterministic("security north", gaz).matched_record_id == "security_t1_north"
     assert resolve_deterministic("north security", gaz).matched_record_id == "security_t1_north"
     assert "security north" in gaz.alias_index and gaz.alias_index["security north"] == "security_t1_north"
+
+
+def test_deictic_phrase_with_generic_noun_asks_for_a_photo(gaz):
+    r = resolve_deterministic("What is this place used for?", gaz)
+    assert r.decision == "clarify" and "deictic" in r.flags
+    # a service word beside the deictic still goes to retrieval, not to the photo request
+    r = resolve_deterministic("what does this baggage sign mean", gaz)
+    assert not r.resolved

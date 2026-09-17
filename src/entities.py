@@ -42,6 +42,7 @@ BELT_PATTERN = re.compile(r"\b(?:belt|carousel)s?\s+(\d{1,2})\b")
 TERMINAL_PATTERN = re.compile(r"\bterminal\s+(\d)\b")
 FLIGHT_RAW_PATTERN = re.compile(r"\b([A-Z]{2})\s?(\d{2,4})\b")
 FLIGHT_SPOKEN_PATTERN = re.compile(r"\bflight\s+([a-z]{2})\s?(\d{2,4})\b")
+DEICTIC_HEAD_NOUNS = ("sign", "signs", "area", "place", "spot", "symbol", "symbols", "icon", "thing", "one")
 TIME_PATTERN = re.compile(
     r"\b(right now|now|tonight|today|this morning|this afternoon|this evening|"
     r"\d{1,2}(?::\d{2})?\s?(?:am|pm)|\d{1,2} oclock)\b")
@@ -138,8 +139,15 @@ class Gazetteers:
             for p in sorted(self.volatile_phrases, key=len, reverse=True)]
         self._cue_pattern = re.compile(
             r"\b(" + "|".join(re.escape(t) for t in sorted(self.category_cues, key=len, reverse=True)) + r")\b")
+        # The vocabulary's deictic values ("this sign", "this", "here", "that")
+        # generalised to the determiners in either number followed by an
+        # optional generic head noun, so that "this area" or "these signs" is
+        # one deictic phrase and its noun is not read as a category cue
+        # ("area" occurs only in gate aliases). Time phrases such as "this
+        # evening" are excluded below (QA 04.5).
+        determiners = sorted({v for v in self.deictic_values if " " not in v and v != "here"} | {"these", "those"})
         self._deictic_pattern = re.compile(
-            r"\b(" + "|".join(re.escape(v) for v in self.deictic_values) + r")\b")
+            r"\b(?:(?:" + "|".join(determiners) + r")(?:\s+(?:" + "|".join(DEICTIC_HEAD_NOUNS) + r"))?|here)\b")
 
     def records_in_category(self, category: str) -> list[str]:
         return [r["record_id"] for r in self.kb["records"] if r["category"] == category]
@@ -231,12 +239,19 @@ def extract(text: str, gaz: Gazetteers, domain_rules: bool = True) -> Extraction
                 consumed.append(m.span())
 
     # --- time references (extracted, never reasoned about: no clock in MVP) ---
+    time_spans = []
     for m in TIME_PATTERN.finditer(norm):
         ents.append(Entity("time", m.group(1), m.group(1)))
+        time_spans.append(m.span())
 
-    # --- deictic references (closed set) ---
+    # --- deictic references: determiner plus optional generic noun, or "here" ---
+    # The phrase is consumed so its noun cannot double as a category cue; a
+    # determiner inside a time phrase ("this evening") is not deictic.
     for m in gaz._deictic_pattern.finditer(norm):
-        ents.append(Entity("deictic_ref", m.group(1), m.group(1)))
+        if any(m.start() < e and m.end() > s for s, e in time_spans):
+            continue
+        ents.append(Entity("deictic_ref", m.group(0), m.group(0)))
+        consumed.append(m.span())
 
     # --- category cues: tokens outside consumed spans ---
     for m in gaz._cue_pattern.finditer(norm):

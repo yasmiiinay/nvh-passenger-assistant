@@ -123,3 +123,28 @@ def test_l1_only_mode(gaz):
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+# ---- QA 04.5 change 2: deictic phrases with a generic noun ----
+
+@pytest.mark.parametrize("text,phrase", [
+    ("What is this place used for?", "this place"),
+    ("Can you tell me what these signs mean?", "these signs"),
+    ("Where does that symbol lead?", "that symbol"),
+    ("What do I do here?", "here"),
+])
+def test_deictic_phrase_with_generic_noun(gaz, text, phrase):
+    ex = extract(text, gaz)
+    assert values(ex, "deictic_ref") == [phrase]
+    assert not ex.category_cues       # the generic noun is not read as a category cue
+
+
+def test_deictic_does_not_fire_inside_a_time_phrase(gaz):
+    ex = extract("is the cafe open this evening", gaz)
+    assert values(ex, "deictic_ref") == [] and values(ex, "time") == ["this evening"]
+
+
+def test_explicit_service_words_still_give_cues_next_to_a_deictic(gaz):
+    ex = extract("what does this baggage sign mean", gaz)
+    assert values(ex, "deictic_ref") == ["this"]
+    assert ("baggage", "baggage") in ex.category_cues
