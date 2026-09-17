@@ -226,12 +226,13 @@ unchanged.
 | Article and capitalisation in image wording ("a accessibility sign") | N4 | article and label helpers |
 | HEIC photo silently dropped by the browser component | Chrome | label says "JPEG or PNG" (no server change can help) |
 | Recorder playback clipped; redundant clear (X) | Safari | voice card grows, X hidden, "Record again" button |
+| Photo and voice cards took two large blocks under the question field | Safari review | one composer row (question · photo icon · microphone icon · Send, as in the UI concept). The photo button opens a picker limited to JPEG, PNG and WebP and shows the attached file as a small chip with "Remove"; the microphone button opens Gradio's own recorder underneath. Icon buttons keep their words as the accessible name. Drag-and-drop onto the old photo card is no longer offered. Screenshot: `docs/report/screenshots/ui_046_composer.png` |
 | Evidence panel too long for a passenger | Safari | five-row summary (outcome, based on, why, matched place, match strength); the full table sits under "Technical details" |
 
 Regression after round 2 (snapshot `after_046_4`) is identical to round 1:
 text dev 37/43, held-out 29/36 (0 wrong records), QA regression 11/15;
 multimodal dev 28/35, held-out 26/33, routing 0.970, conflict 5/0/0,
-multimodal regression 13/13; speech WER unchanged. Full suite: 306 passed.
+multimodal regression 13/13; speech WER unchanged. Full suite: 307 passed.
 "Sacred North" now abstains: the right outcome would be Security North, but
 the transcript's similarity (0.21) is below the abstain threshold, so the
 change turns a wrong clarification into a safe refusal rather than a correct

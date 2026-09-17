@@ -52,6 +52,8 @@ def zerogpu_probe() -> str:
 AIRPORT = "Nordhaven International (NVH)"
 TITLE = "Nordhaven Airport Assistant"
 SUBTITLE = "Ask about gates, baggage, transport and airport services."
+# formats the picker offers; HEIC is left out because the vision step cannot open it
+PHOTO_TYPES = [".jpg", ".jpeg", ".png", ".webp"]
 SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven Assistant is not a live agent "
               "and does not show live flight status. Demonstration system for a fictional airport; "
               "all information is synthetic.")
@@ -268,6 +270,16 @@ def thumbnail(image_path: str, box: int = 112) -> str | None:
     return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
 
 
+def photo_chip_html(image_path: str | None) -> str:
+    """The attached photo, shown under the composer until it is sent or removed."""
+    if not image_path:
+        return ""
+    thumb = thumbnail(image_path, box=88)
+    name = html.escape(Path(image_path).name)
+    picture = f'<img src="{thumb}" alt="">' if thumb else ""
+    return f'<div class="attach-chip">{picture}<span>Photo attached · {name}</span></div>'
+
+
 def passenger_html(text: str | None, image_path: str | None, transcript: str | None, audio: bool) -> str:
     parts = ['<div class="turn turn--user">']
     parts.append('<div class="role">Passenger' + (' · voice' if audio else '') + '</div>')
@@ -473,52 +485,57 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 #assistance button { flex: 0 0 auto !important; width: auto !important; align-self: flex-start; min-height: 44px;
                      padding: 0 18px; background: var(--ink); color: var(--bg); font-weight: 700; border: 0; font-size: 14px; }
 
-/* composer */
+/* composer: one row (question · photo · voice · send); what is attached shows underneath */
 #composer { border-top: 2px solid var(--rule); background: var(--surface); padding: 14px var(--gutter-block) 14px; margin-top: 24px; gap: 8px; }
 #composer .block { padding: 0 !important; }
-#composer .row { gap: 10px; }
+#composer-row { gap: 10px; align-items: stretch; flex-wrap: nowrap; }
 #question textarea, #transcript textarea { min-height: 48px; font-size: 16px; background: var(--bg);
                     border: 1px solid var(--rule) !important; padding: 12px 14px; }
-#question label span, #transcript label span, #attachments label span { font-size: 12px; font-weight: 600;
+#question label span, #transcript label span, #tray label span { font-size: 12px; font-weight: 600;
                     letter-spacing: .04em; color: var(--muted); }
 #question label span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 #send { background: var(--accent); color: var(--bg); font-weight: 800; border: 0; min-height: 48px;
-        flex: 0 0 auto !important; padding: 0 22px; align-self: flex-end; }
+        flex: 0 0 auto !important; padding: 0 22px; }
 #send:hover { background: #dd2b0f; }
-#attachments { align-items: stretch; max-width: 720px; }
-#attachments { align-items: flex-start; }
-#attachments > #photo { min-height: 0 !important; height: 150px !important; max-height: 150px !important;
-                        background: var(--bg) !important; border: 1px solid var(--rule) !important; overflow: hidden; }
+/* icon buttons keep their words as the accessible name; only the glyph is drawn */
+#photo-btn, #mic-btn { flex: 0 0 48px !important; width: 48px !important; min-width: 48px !important; min-height: 48px;
+        padding: 0 !important; border: 1px solid var(--rule); background: var(--bg) center / 22px 22px no-repeat;
+        font-size: 0 !important; color: transparent !important; }
+#photo-btn:hover, #mic-btn:hover { border-color: var(--ink); }
+#photo-btn { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='1.8'%3E%3Crect x='3' y='3' width='18' height='18'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.8'/%3E%3Cpath d='M21 15l-5-5L5 21'/%3E%3C/svg%3E"); }
+#mic-btn { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111' stroke-width='1.8'%3E%3Crect x='9' y='3' width='6' height='11' rx='3'/%3E%3Cpath d='M5 11a7 7 0 0 0 14 0M12 18v3'/%3E%3C/svg%3E"); }
+#mic-btn.is-open { border: 2px solid var(--ink); }
+#tray { gap: 8px; flex-direction: column; align-items: flex-start; }
+#tray > * { flex: 0 0 auto !important; width: auto !important; }
+#photo-chip { flex: 0 0 auto !important; width: auto !important; max-width: 100%; flex-wrap: nowrap !important; align-items: center;
+              gap: 4px; background: var(--bg); border: 1px solid var(--rule); padding: 4px 6px 4px 4px; }
+#photo-chip > * { flex: 0 0 auto !important; min-width: 0 !important; width: auto !important; }
+#photo-chip .html-container { padding: 0 !important; }
+.attach-chip { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.attach-chip img { width: 40px; height: 40px; object-fit: contain; background: var(--surface); }
+#remove-photo { min-height: 36px; padding: 0 10px; font-size: 13px; font-weight: 600; background: transparent;
+                border: 0; text-decoration: underline; }
+#record-again { flex: 0 0 auto !important; align-self: flex-start; min-height: 36px; padding: 0 12px;
+        font-size: 13px; background: transparent; border: 1px solid var(--rule); font-weight: 600; }
+#voice-panel { width: 460px !important; max-width: 100%; gap: 6px; }
 /* the recorder grows while recording so Stop, the timer and the waveform stay reachable (H1) */
-#voice { height: auto !important; max-height: none !important; min-height: 150px !important;
-                        overflow: visible !important; background: var(--bg) !important; border: 1px solid var(--rule) !important; }
-#voice .controls, #voice .audio-container, #voice .component-wrap, #voice .wrap { overflow: visible !important; }
-#voice .icon-button-wrapper { display: none !important; }   /* the card says optional; "Record again" replaces the X */
-#record-again { flex: 0 0 auto !important; align-self: flex-start; min-height: 36px; padding: 0 12px; font-size: 13px;
-                background: transparent; border: 1px solid var(--rule); font-weight: 600; margin-top: 6px; }
-/* Gradio's clear icon is the only reliable way to discard a recording, so it stays; visually secondary (H2) */
-#photo .icon-button-wrapper { opacity: .55; }
-#photo .icon-button-wrapper:hover { opacity: 1; }
-#photo .upload-container, #photo .upload-container > button { height: 100% !important; max-height: 148px !important; }
-#attachments .label-wrap, #attachments label { font-size: 12px; }
-#photo .upload-container, #photo .image-container { height: 100%; }
-#photo .wrap { font-size: 13px; }
-#voice .controls, #voice .audio-container { min-height: 0; }
+#voice { height: auto !important; max-height: none !important; min-height: 0 !important;
+         overflow: visible !important; background: var(--bg) !important; border: 1px solid var(--rule) !important; }
+#voice .controls, #voice .audio-container, #voice .component-wrap, #voice .wrap { overflow: visible !important; min-height: 0; }
+#voice .icon-button-wrapper { display: none !important; }   /* "Record again" replaces the X */
 #scope { font-size: 12.5px; color: var(--muted); margin: 2px 0 0 -12px; max-width: 80ch; }
 :focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px; }
 
 @media (max-width: 760px) {
   .gradio-container { --gutter: 18px; --gutter-block: 30px; }
   #header { flex-direction: column; align-items: flex-start; }
-  #composer .row, #quick .row, #examples .row, #history-bar, #attachments { flex-direction: column; align-items: stretch; }
-  #send { align-self: stretch; }
+  #quick .row, #examples .row, #history-bar { flex-direction: column; align-items: stretch; }
+  #composer-row { flex-wrap: wrap; }
+  #composer-row .form:has(#question), #composer-row #question { flex: 1 1 100% !important; min-width: 100% !important; }
+  #composer-row #send { flex: 1 1 0 !important; width: auto !important; }
   .turn--user .bubble { max-width: 100%; }
-  #attachments > #photo { height: 140px !important; max-height: 140px !important; }
-  #voice { height: auto !important; max-height: none !important; min-height: 140px !important; }
   .ev-grid { grid-template-columns: 1fr; }
   .ev-row { grid-template-columns: 1fr; gap: 2px; }
-  #send { width: 100% !important; }
-  #photo .upload-container, #photo .upload-container > button { max-height: 138px !important; }
 }
 """
 
@@ -565,23 +582,28 @@ def build_ui() -> gr.Blocks:
                 ticket_out = gr.Markdown(value="")
 
             with gr.Column(elem_id="composer"):
-                with gr.Row():
+                with gr.Row(elem_id="composer-row"):
                     text_in = gr.Textbox(label="Your question", placeholder="Ask about your journey…", lines=1,
                                          elem_id="question", scale=6)
-                    send = gr.Button("Send →", elem_id="send", scale=0, min_width=140)
-                with gr.Row(elem_id="attachments"):
-                    # image_mode=None keeps the file as uploaded: the default RGB conversion
-                    # turns a transparent pictogram into a black square before it reaches us
-                    image_in = gr.Image(label="Photo of a sign (optional · JPEG or PNG)", type="filepath", sources=["upload"],
-                                        image_mode=None, height=150, elem_id="photo")
-                    with gr.Column(min_width=240):
+                    # the upload button hands over the file untouched, so a transparent pictogram is
+                    # never flattened; the picker offers only formats the vision step can open
+                    photo_btn = gr.UploadButton("Add a photo of a sign", file_types=PHOTO_TYPES, file_count="single",
+                                                type="filepath", elem_id="photo-btn", scale=0, min_width=48)
+                    mic_btn = gr.Button("Ask by voice", elem_id="mic-btn", scale=0, min_width=48)
+                    send = gr.Button("Send →", elem_id="send", scale=0, min_width=120)
+                with gr.Column(elem_id="tray"):
+                    with gr.Row(elem_id="photo-chip", visible=False) as photo_chip:
+                        photo_view = gr.HTML("", padding=False)
+                        remove_photo = gr.Button("Remove", elem_id="remove-photo", scale=0, min_width=0)
+                    with gr.Column(elem_id="voice-panel", visible=False) as voice_panel:
                         audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
                                             sources=["microphone", "upload"], elem_id="voice")
                         record_again = gr.Button("Record again", elem_id="record-again", visible=False)
                 gr.HTML(f'<div id="scope">{SCOPE_NOTE}</div>')
 
+        photo_path = gr.State(None)
         turn_outputs = [conversation, examples, history_bar, notice, quick_row, *quick_buttons, transcript,
-                        evidence_panel, evidence, session, text_in, image_in, audio_in]
+                        evidence_panel, evidence, session, text_in, photo_path, photo_chip, audio_in]
 
         def to_outputs(result: dict) -> list:
             quick = result["quick"]
@@ -593,7 +615,7 @@ def build_ui() -> gr.Blocks:
                     gr.update(value=result["notice"], visible=bool(result["notice"])),
                     gr.update(visible=bool(quick)), *buttons, gr.update(value=heard, visible=bool(heard)),
                     gr.update(visible=bool(result["evidence"])), result["evidence"],
-                    result["session"], "", None, None]
+                    result["session"], "", None, gr.update(visible=False), None]
 
         def on_send(text, image_path, audio_path, session):
             return to_outputs(run_turn(text, image_path, audio_path, session))
@@ -611,8 +633,15 @@ def build_ui() -> gr.Blocks:
             return to_outputs({"conversation": conversation_html([]), "notice": "", "transcript": "",
                                "evidence": "", "quick": [], "session": kept})
 
-        send.click(on_send, inputs=[text_in, image_in, audio_in, session], outputs=turn_outputs)
-        text_in.submit(on_send, inputs=[text_in, image_in, audio_in, session], outputs=turn_outputs)
+        send.click(on_send, inputs=[text_in, photo_path, audio_in, session], outputs=turn_outputs)
+        text_in.submit(on_send, inputs=[text_in, photo_path, audio_in, session], outputs=turn_outputs)
+        photo_btn.upload(lambda path: (path, photo_chip_html(path), gr.update(visible=bool(path))),
+                         inputs=[photo_btn], outputs=[photo_path, photo_view, photo_chip])
+        remove_photo.click(lambda: (None, "", gr.update(visible=False)), outputs=[photo_path, photo_view, photo_chip])
+        voice_open = gr.State(False)
+        mic_btn.click(lambda is_open: (gr.update(visible=not is_open), not is_open,
+                                       gr.update(elem_classes=[] if is_open else ["is-open"])),
+                      inputs=[voice_open], outputs=[voice_panel, voice_open, mic_btn])
         transcript.submit(lambda heard, s: to_outputs(run_turn(heard, None, None, s)),
                           inputs=[transcript, session], outputs=turn_outputs)
         for i, button in enumerate(quick_buttons):

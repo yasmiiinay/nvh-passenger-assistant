@@ -13,11 +13,24 @@ from src import event_log
 from src.router import Outcome
 
 
-def test_page_builds_and_keeps_uploaded_images_as_they_are():
+def test_page_builds_with_a_single_composer_row():
     demo = ui.build_ui()
     assert isinstance(demo, gr.Blocks)
-    photo = next(c for c in demo.blocks.values() if getattr(c, "elem_id", None) == "photo")
-    assert photo.image_mode is None     # a transparent pictogram must not become a black square
+    by_id = {getattr(c, "elem_id", None): c for c in demo.blocks.values()}
+    # the upload button passes the file path untouched (no RGB conversion of transparent pictograms)
+    assert by_id["photo-btn"].type == "filepath"
+    assert ".heic" not in [t.lower() for t in by_id["photo-btn"].file_types]
+    # icon buttons still carry words for screen readers
+    assert by_id["photo-btn"].label.strip() and by_id["mic-btn"].value.strip()
+
+
+def test_photo_chip_names_the_attached_file(tmp_path):
+    from PIL import Image
+    path = tmp_path / "sign.png"
+    Image.new("RGBA", (40, 40), (0, 0, 0, 0)).save(path)
+    chip = ui.photo_chip_html(str(path))
+    assert "Photo attached" in chip and "sign.png" in chip and "data:image/png" in chip
+    assert ui.photo_chip_html(None) == ""
 
 
 def test_empty_input_is_a_message_not_a_traceback():
