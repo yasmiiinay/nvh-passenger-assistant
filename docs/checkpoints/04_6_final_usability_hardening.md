@@ -206,6 +206,37 @@ record fields; 400 px viewport has no horizontal scroll (`scrollWidth`
 400 px) is required on the MacBook before deployment and has not been done
 in this workspace.
 
+## Round 2 (after Chrome, photo and own-voice runs)
+
+The manual runs recorded in `docs/report/manual_usability_diagnostics_046.md`
+exposed the following failure classes. Each fix is a general rule with
+paraphrase and false-positive tests; thresholds, KB, CLIP and Whisper are
+unchanged.
+
+| Class | Seen in | Change |
+|---|---|---|
+| Clock times with a.m./p.m. spelling ("9.15 p.m.", "8 pm") read as morning | own voice | meridiem and preposition clock patterns; a bare hour 1–12 keeps both readings and the verdict says when they differ |
+| An hours or directions intent widened a single-record cue to unrelated records | own voice ("Sacred North") | aspect intents keep the cue records |
+| Terminal quick replies missing after a photo clarification | I1, I3, I5 | photo clarifications carry the one-turn pending context |
+| Terminal question asked when every candidate serves both terminals | I4 | the candidates are listed instead |
+| Sign whose meaning is in text offered two unrelated categories | N1, N3 | nearest anchor is the printed-document anchor → ask what the sign says |
+| Quality note shown on a strong photo match | I7 | note only when the band is not strong |
+| First aid described as "the nearest designated assistance point" | I8 | assistance sentence only for accessibility records |
+| Article and capitalisation in image wording ("a accessibility sign") | N4 | article and label helpers |
+| HEIC photo silently dropped by the browser component | Chrome | label says "JPEG or PNG" (no server change can help) |
+| Recorder playback clipped; redundant clear (X) | Safari | voice card grows, X hidden, "Record again" button |
+| Evidence panel too long for a passenger | Safari | five-row summary (outcome, based on, why, matched place, match strength); the full table sits under "Technical details" |
+
+Regression after round 2 (snapshot `after_046_4`) is identical to round 1:
+text dev 37/43, held-out 29/36 (0 wrong records), QA regression 11/15;
+multimodal dev 28/35, held-out 26/33, routing 0.970, conflict 5/0/0,
+multimodal regression 13/13; speech WER unchanged. Full suite: 304 passed.
+"Sacred North" now abstains: the right outcome would be Security North, but
+the transcript's similarity (0.21) is below the abstain threshold, so the
+change turns a wrong clarification into a safe refusal rather than a correct
+answer. N5 (lost-property pictogram → security, strong) is not fixed: the
+controlled vocabulary has no visual class for lost property.
+
 ## Remaining limitations
 
 - A landmark is only recognised when something else is asked for; "I'm

@@ -288,13 +288,15 @@ def render(result: RetrievalResult, gaz) -> str:
         lines.append(f"For {_asked_terminal(result)}, that is {record['name']}.")
     if "cross_terminal_service" in result.flags:
         lines.append(f"{record['name']} also serves {_asked_terminal(result)}.")
-    if "assist_policy" in result.flags:
+    if "assist_policy" in result.flags and record["category"] == "accessibility":
         lines.append(f"The nearest designated assistance point is {record['name']}, {_place(record)}.")
         if record.get("assistance_contact"):
             lines.append("Help: " + record["assistance_contact"] + ".")
         return "\n".join(lines)
+    if aspect == "accessibility" and record["category"] != "accessibility" and not ACCESS_WORDS.search(result.normalized):
+        aspect = "where"      # an assistance-worded request answered with first aid is a where question (04.6)
     if "followup_context" in result.flags:
-        lines.append(f"For {record['category'].replace('_', ' ')} in {record['terminal']}:")
+        lines.append(f"In {record['terminal']}:")
     lines.extend(concise_record_text(record, gaz, result, aspect))
     return "\n".join(lines)
 
@@ -351,15 +353,38 @@ def compact_facts(record: dict) -> list[tuple[str, str, str]]:
 
 
 # ---------------------------------------------------------------------------
-# multimodal outcomes (checkpoint 03.4)
+# multimodal outcomes (checkpoint 03.4; shortened in 04.6)
 # ---------------------------------------------------------------------------
 
+def _category_word(category: str) -> str:
+    return {"check_in": "check-in", "lost_property": "lost property"}.get(category, category.replace("_", " "))
+
+
+def _a_sign(category: str) -> str:
+    """"a restroom sign" / "an accessibility sign"."""
+    word = _category_word(category)
+    return f"{'an' if word[0] in 'aeiou' else 'a'} {word} sign"
+
+
 def _category_label(category: str, gaz) -> str:
-    return f"{category.replace('_', ' ')} ({gaz.vocabulary['categories'][category]['description'].lower()})"
+    """Category word plus its vocabulary description, used where the passenger
+    has to choose between categories and the word alone is too terse."""
+    description = gaz.vocabulary["categories"][category]["description"]
+    return f"{_category_word(category)} ({description[0].lower() + description[1:]})"
 
 
-def _names(record_ids: list[str], gaz) -> str:
-    return "; ".join(f"{gaz.records[rid]['name']} ({gaz.records[rid]['terminal']})" for rid in record_ids)
+def _names_only(record_ids: list[str], gaz) -> str:
+    names = [gaz.records[rid]["name"] for rid in record_ids]
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " or " + names[-1]
+
+
+def _photo_quality_note(outcome) -> list[str]:
+    """Quality flags explain an uncertain or failed photo; on a strong match
+    they only add noise ("the photo looks bright" on a clean icon)."""
+    vision = outcome.vision
+    if vision is None or not vision.check.flags or outcome.band == "strong match":
+        return []
+    return ["The photo looks " + " and ".join(vision.check.flags) + "; a clearer, closer photo may help."]
 
 
 def _modality_notes(outcome, gaz) -> list[str]:
@@ -374,14 +399,13 @@ def _modality_notes(outcome, gaz) -> list[str]:
                          "please re-record closer to the microphone or type your question.")
     if outcome.vision is not None and outcome.route in ("text_leads", "voice_leads"):
         if "image_agrees" in outcome.flags:
-            lines.append(f"The photo agrees: it looks like a {_category_label(outcome.image_category, gaz)} sign.")
+            lines.append(f"The photo agrees: it looks like {_a_sign(outcome.image_category)}.")
         elif "image_disagrees" in outcome.flags:
-            lines.append(f"Note: the photo looks like a {_category_label(outcome.image_category, gaz)} sign, "
-                         "which is not what your question refers to. I have answered the question; "
-                         "if you meant the sign, please ask about it on its own.")
+            lines.append(f"Note: the photo looks like {_a_sign(outcome.image_category)}, which is not what your "
+                         "question refers to. I have answered the question; if you meant the sign, "
+                         "please ask about it on its own.")
         elif "image_uncertain_agrees" in outcome.flags:
-            lines.append(f"The photo most likely shows a {_category_label(outcome.image_category, gaz)} sign, "
-                         "which fits your question, so I went by your words.")
+            lines.append(f"The photo most likely shows {_a_sign(outcome.image_category)}, which fits your question.")
         elif "image_uncertain" in outcome.flags:
             lines.append("I could not identify the sign in the photo with any confidence, so I answered from your words.")
         elif "image_not_recognised" in outcome.flags:
@@ -411,42 +435,53 @@ def render_outcome(outcome, gaz) -> str:
     if outcome.decision == "conflict":
         detail = outcome.conflict_detail
         text_part = (gaz.records[detail["text_record"]]["name"] if detail.get("text_record")
-                     else " or ".join(_category_label(c, gaz) for c in detail["text_categories"]))
-        lines.append(f"Your words point to {text_part}, but the photo looks like a "
-                     f"{_category_label(detail['image_category'], gaz)} sign. Which one do you mean?")
-        lines.append("Options: " + _names(outcome.candidates, gaz) + ".")
+                     else " or ".join(_category_word(c) for c in detail["text_categories"]))
+        lines.append(f"Your words point to {text_part}, but the photo looks like {_a_sign(detail['image_category'])}. "
+                     "Which one do you mean?")
+        lines.append("Options: " + _names_only(outcome.candidates, gaz) + ".")
         lines.extend(_modality_notes(outcome, gaz))
         return "\n".join(lines)
 
     # image-led or image-only
     if outcome.decision == "abstain":
         lines.append("I could not recognise an airport sign in this photo.")
-        if outcome.vision is not None and outcome.vision.check.flags:
-            lines.append("The photo looks " + " and ".join(outcome.vision.check.flags) + "; a clearer, closer photo may help.")
-        lines.append("You can also type or say what you are looking for, or ask at an information desk.")
+        lines.extend(_photo_quality_note(outcome))
+        lines.append("You can also type or say what you are looking for.")
         lines.extend(_modality_notes(outcome, gaz))
         return "\n".join(lines)
 
     category = outcome.image_category
     if outcome.decision == "clarify":
-        if "image_no_clear_leader" in outcome.flags:
+        vision = outcome.vision
+        text_sign = vision is not None and "printed document" in vision.best_anchor[0]
+        if "image_uncertain" in outcome.flags and text_sign:
+            # a sign whose meaning is in its words ("Gate C7", "Departures"):
+            # the system cannot read it, so it asks rather than naming two
+            # categories that are both guesses (04.6)
+            outcome.flags.append("image_text_sign")
+            lines.append("This looks like a sign with writing on it, which I cannot read. "
+                         "What does it say, or what are you looking for?")
+        elif "image_no_clear_leader" in outcome.flags:
             # runner-up within the vision margin: name both, never a third
-            first, second = (c for c, _ in outcome.vision.category_ranking[:2])
+            first, second = (c for c, _ in vision.category_ranking[:2])
             lines.append(f"I am not sure what this sign shows; it may be {_category_label(first, gaz)} or "
-                         f"{_category_label(second, gaz)}. Could you say what you are looking for, "
-                         "or take a closer photo?")
+                         f"{_category_label(second, gaz)}. What are you looking for?")
         elif "image_uncertain" in outcome.flags:
-            lines.append(f"This most likely shows a {_category_label(category, gaz)} sign, but I am not certain. "
+            lines.append(f"This most likely shows {_a_sign(category)}, but I am not certain. "
                          "Is that what you are looking for?")
         elif "image_confirm" in outcome.flags:
-            lines.append(f"This looks like a {_category_label(category, gaz)} sign. "
-                         f"Is that what you are looking for? If so, the place is: {_names(outcome.candidates, gaz)}.")
+            lines.append(f"This looks like {_a_sign(category)}. Do you mean {_names_only(outcome.candidates, gaz)}?")
+        elif "image_list" in outcome.flags:
+            lines.append(f"This looks like {_a_sign(category)}. Which do you need: "
+                         f"{_names_only(outcome.candidates, gaz)}?")
         else:
-            lines.append(f"This looks like a {_category_label(category, gaz)} sign. "
-                         f"There is more than one such place: {_names(outcome.candidates, gaz)}. "
-                         "Which terminal are you in?")
-        if outcome.vision is not None and outcome.vision.check.flags:
-            lines.append("The photo looks " + " and ".join(outcome.vision.check.flags) + ".")
+            terminals = sorted({gaz.records[rid]["terminal"] for rid in outcome.candidates})
+            if len(terminals) > 1:
+                lines.append(f"This looks like {_a_sign(category)}. Are you in {' or '.join(terminals)}?")
+            else:
+                lines.append(f"This looks like {_a_sign(category)}. Which one do you mean: "
+                             f"{_names_only(outcome.candidates, gaz)}?")
+        lines.extend(_photo_quality_note(outcome))
         lines.extend(_modality_notes(outcome, gaz))
         return "\n".join(lines)
 
@@ -455,7 +490,7 @@ def render_outcome(outcome, gaz) -> str:
     if "deictic" in outcome.flags:
         lines.append(f"This sign means: {_category_label(category, gaz)}.")
     else:
-        lines.append(f"From the photo this looks like a {_category_label(category, gaz)} sign.")
+        lines.append(f"From the photo this looks like {_a_sign(category)}.")
     if "text_not_understood" in outcome.flags:
         lines.append("I did not understand the words, so the answer comes from the photo.")
     elif "text_weak" in outcome.flags:

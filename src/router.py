@@ -21,7 +21,9 @@ Rule order (first that applies wins):
   R4  text answered by alias or similarity
       and the image is strong                 -> same category: reinforced;
                                                  different: conflict
-  R5  image only                              -> image leads
+  R5  image only                              -> image leads (several records: the
+                                                 terminal is asked, or the places
+                                                 listed when all serve both terminals)
   R6  otherwise                               -> text (or the voice transcript)
                                                  stands on its own
 
@@ -237,6 +239,12 @@ def _image_leads(out: Outcome, vision: VisionResult, text: RetrievalResult | Non
         out.reason = f"image category {category} ({score:.2f}) leaves one record"
         return out
     out.decision = "clarify"
+    if all(set(gaz.records[rid]["serves_terminals"]) >= gaz.terminals for rid in records):
+        # every candidate serves both terminals (ground transport): the
+        # terminal cannot narrow anything, so the places are offered (04.6)
+        out.flags.append("image_list")
+        out.reason = f"image category {category} ({score:.2f}) matches {len(records)} airport-wide records"
+        return out
     out.clarification_field = "terminal"
     out.flags.append("image_needs_terminal")
     out.reason = f"image category {category} ({score:.2f}) matches {len(records)} records; terminal unknown"
@@ -390,7 +398,15 @@ def route(text: str | None, image_path: str | Path | None, audio_path: str | Pat
     if errors:
         out.error = "; ".join(errors)
         out.flags.append("input_error")
-    # only a text clarification that still stands leaves context behind; a
-    # photo that settled the question, a conflict or an answer clears it
-    out.pending_next = pending_context(text_result, ctx.gaz) if out.decision == "clarify" else None
+    # only a clarification that still stands leaves context behind; an answer,
+    # a redirect, an abstention or a conflict clears it. A photo that named one
+    # category leaves that category, so "Terminal 1" can complete it (04.6)
+    out.pending_next = None
+    if out.decision == "clarify":
+        if out.route in ("image_only", "image_leads") and out.image_category and \
+                "image_no_clear_leader" not in out.flags:
+            terminal = text_result.entities.get("terminal") if text_result is not None else None
+            out.pending_next = {"category": out.image_category, "terminal": terminal, "zones": []}
+        else:
+            out.pending_next = pending_context(text_result, ctx.gaz)
     return out

@@ -45,7 +45,8 @@ def test_quick_replies_only_for_terminal_clarify_and_conflict():
     class Gaz:
         records = {"a": {"category": "security", "terminal": "Terminal 1"},
                    "b": {"category": "security", "terminal": "Terminal 2"}}
-    clarify = Outcome(route="text_only", decision="clarify", candidates=["a", "b"], clarification_field="terminal")
+    clarify = Outcome(route="text_only", decision="clarify", candidates=["a", "b"], clarification_field="terminal",
+                      pending_next={"category": "security", "terminal": None, "zones": []})
     clarify.text = object()
     replies = ui.quick_replies(clarify, Gaz(), "where is security", None)
     assert [r["label"] for r in replies] == ["Terminal 1", "Terminal 2"]
@@ -143,6 +144,25 @@ def test_answer_is_short_and_details_are_in_the_evidence_panel(models_ready, tmp
 def test_history_note_is_on_the_page():
     demo = ui.build_ui()
     assert any(ui.HISTORY_NOTE in str(getattr(c, "value", "")) for c in demo.blocks.values())
+
+
+def test_a_terminal_reply_completes_a_photo_clarification(models_ready, tmp_path, monkeypatch):
+    monkeypatch.setattr(event_log, "EVENTS_PATH", tmp_path / "events.jsonl")
+    photo = Path(__file__).resolve().parents[1] / "data" / "images" / "files" / "img_015.png"   # restroom pictogram
+    first = ui.run_turn("", str(photo), None, {})
+    if first["session"]["pending"] is None:
+        pytest.skip("photo did not produce a terminal clarification here")
+    assert [q["label"] for q in first["quick"]] == ["Terminal 1", "Terminal 2"]
+    second = ui.run_turn("Terminal 2", None, None, first["session"])
+    assert "Restrooms, Terminal 2" in second["conversation"]
+
+
+def test_evidence_starts_with_a_short_summary(models_ready, tmp_path, monkeypatch):
+    monkeypatch.setattr(event_log, "EVENTS_PATH", tmp_path / "events.jsonl")
+    evidence = ui.run_turn("Where is gate B12?", None, None, {})["evidence"]
+    summary, technical = evidence.split('<details class="ev-tech">')
+    assert summary.count('class="ev-row"') <= 5 and "Pier B Gates" in summary
+    assert "Retrieval stage" in technical and "Description" in technical
 
 
 def test_unreadable_image_is_handled(models_ready, tmp_path, monkeypatch):

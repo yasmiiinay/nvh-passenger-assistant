@@ -146,10 +146,64 @@ def evidence_rows(outcome: Outcome, gaz) -> list[tuple[str, str]]:
     return rows
 
 
-def evidence_html(outcome: Outcome, gaz) -> str:
+def plain_reason(outcome: Outcome) -> str:
+    """One passenger-readable reason; the internal reason string stays in
+    the technical details."""
+    flags, text = set(outcome.flags), outcome.text
+    if outcome.decision == "conflict":
+        return "Your words and your photo point to different places"
+    if "action_request" in flags:
+        return "Booking or arranging things is not something this assistant does"
+    if "unsupported_service" in flags:
+        return "That service is not in the airport information"
+    if outcome.decision == "redirect":
+        return "Live flight information changes and is not held here"
+    if "followup_context" in flags:
+        return "Your message completed the previous question"
+    if "fragment" in flags:
+        return "No service was named"
+    if "image_text_sign" in flags:
+        return "The photo shows a sign with writing, which cannot be read"
+    if outcome.route in ("image_only", "image_leads"):
+        return "The kind of sign recognised in your photo"
+    if "grounded_negative" in flags:
+        return "The airport information says it is not there"
+    if text is not None and text.stage == "exact_identifier":
+        return "The number or code in your question"
+    if text is not None and text.stage == "alias_lookup":
+        return "A place name in your question"
+    if outcome.decision == "abstain":
+        return "Nothing in the airport information matched closely"
+    return "The closest match to your words"
+
+
+def evidence_summary(outcome: Outcome, gaz) -> list[tuple[str, str]]:
+    rows = [("Outcome", DECISION_LABELS.get(outcome.decision, outcome.decision)),
+            ("Based on", ROUTE_LABELS.get(outcome.route, outcome.route)),
+            ("Why", plain_reason(outcome))]
+    if outcome.matched_record_id:
+        rows.append(("Matched place", gaz.records[outcome.matched_record_id]["name"]))
+    elif outcome.candidates:
+        names = [gaz.records[r]["name"] for r in outcome.candidates if r in gaz.records]
+        rows.append(("Options", ", ".join(names[:5]) + (" …" if len(names) > 5 else "")))
+    if outcome.band:
+        strength = outcome.band[0].upper() + outcome.band[1:]
+        rows.append(("Match strength", strength + (f" (score {outcome.score:.2f})" if outcome.score is not None else "")))
+    return rows
+
+
+def _grid(rows: list[tuple[str, str]], cls: str = "ev-grid") -> str:
     cells = "".join(f'<div class="ev-row"><dt>{html.escape(label)}</dt><dd>{html.escape(value)}</dd></div>'
-                    for label, value in evidence_rows(outcome, gaz))
-    return f'<dl class="ev-grid">{cells}</dl><p class="ev-note">{SCORE_NOTE}</p>'
+                    for label, value in rows)
+    return f'<dl class="{cls}">{cells}</dl>'
+
+
+def evidence_html(outcome: Outcome, gaz) -> str:
+    """A short summary a passenger can read, then everything else inside a
+    closed native <details> element (no script)."""
+    return (_grid(evidence_summary(outcome, gaz), "ev-grid ev-summary")
+            + '<details class="ev-tech"><summary>Technical details</summary>'
+            + _grid(evidence_rows(outcome, gaz)) + f'<p class="ev-note">{SCORE_NOTE}</p></details>')
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +241,7 @@ def quick_replies(outcome: Outcome, gaz, text: str | None, image_path: str | Non
     """Buttons that build the next request for the passenger. Each one is a
     fresh request through the same pipeline; a terminal button is the short
     follow-up the pending clarification completes."""
-    if outcome.decision == "clarify" and outcome.clarification_field == "terminal" and outcome.text is not None:
+    if outcome.decision == "clarify" and outcome.clarification_field == "terminal" and outcome.pending_next:
         terminals = sorted({gaz.records[rid]["terminal"] for rid in outcome.candidates})
         return [{"label": t, "text": t} for t in terminals]
     if (outcome.decision == "clarify" and outcome.text is not None and "deictic" not in outcome.flags
@@ -406,6 +460,9 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 .ev-row dt { font-weight: 800; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-top: 2px; }
 .ev-row dd { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; line-height: 1.45;
              color: var(--ink); overflow-wrap: anywhere; }
+.ev-summary dd { font-family: inherit !important; font-size: 14px !important; }
+.ev-tech { margin-top: 10px; }
+.ev-tech > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); padding: 6px 0; min-height: 32px; }
 .ev-note { font-size: 12.5px; color: var(--muted); margin: 10px 0 8px; max-width: 80ch; }
 
 /* assistance */
@@ -430,14 +487,18 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 #send:hover { background: #dd2b0f; }
 #attachments { align-items: stretch; max-width: 720px; }
 #attachments { align-items: flex-start; }
-#attachments > .block, #photo, #voice { min-height: 0 !important; height: 150px !important; max-height: 150px !important;
+#attachments > #photo { min-height: 0 !important; height: 150px !important; max-height: 150px !important;
                         background: var(--bg) !important; border: 1px solid var(--rule) !important; overflow: hidden; }
 /* the recorder grows while recording so Stop, the timer and the waveform stay reachable (H1) */
-#voice { height: auto !important; max-height: none !important; min-height: 150px !important; overflow: visible; }
-#voice .controls, #voice .audio-container, #voice .component-wrap { overflow: visible; }
+#voice { height: auto !important; max-height: none !important; min-height: 150px !important;
+                        overflow: visible !important; background: var(--bg) !important; border: 1px solid var(--rule) !important; }
+#voice .controls, #voice .audio-container, #voice .component-wrap, #voice .wrap { overflow: visible !important; }
+#voice .icon-button-wrapper { display: none !important; }   /* the card says optional; "Record again" replaces the X */
+#record-again { flex: 0 0 auto !important; align-self: flex-start; min-height: 36px; padding: 0 12px; font-size: 13px;
+                background: transparent; border: 1px solid var(--rule); font-weight: 600; margin-top: 6px; }
 /* Gradio's clear icon is the only reliable way to discard a recording, so it stays; visually secondary (H2) */
-#voice .icon-button-wrapper, #photo .icon-button-wrapper { opacity: .55; }
-#voice .icon-button-wrapper:hover, #photo .icon-button-wrapper:hover { opacity: 1; }
+#photo .icon-button-wrapper { opacity: .55; }
+#photo .icon-button-wrapper:hover { opacity: 1; }
 #photo .upload-container, #photo .upload-container > button { height: 100% !important; max-height: 148px !important; }
 #attachments .label-wrap, #attachments label { font-size: 12px; }
 #photo .upload-container, #photo .image-container { height: 100%; }
@@ -452,7 +513,7 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
   #composer .row, #quick .row, #examples .row, #history-bar, #attachments { flex-direction: column; align-items: stretch; }
   #send { align-self: stretch; }
   .turn--user .bubble { max-width: 100%; }
-  #attachments > .block, #photo { height: 140px !important; max-height: 140px !important; }
+  #attachments > #photo { height: 140px !important; max-height: 140px !important; }
   #voice { height: auto !important; max-height: none !important; min-height: 140px !important; }
   .ev-grid { grid-template-columns: 1fr; }
   .ev-row { grid-template-columns: 1fr; gap: 2px; }
@@ -511,10 +572,12 @@ def build_ui() -> gr.Blocks:
                 with gr.Row(elem_id="attachments"):
                     # image_mode=None keeps the file as uploaded: the default RGB conversion
                     # turns a transparent pictogram into a black square before it reaches us
-                    image_in = gr.Image(label="Photo of a sign (optional)", type="filepath", sources=["upload"],
+                    image_in = gr.Image(label="Photo of a sign (optional · JPEG or PNG)", type="filepath", sources=["upload"],
                                         image_mode=None, height=150, elem_id="photo")
-                    audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
-                                        sources=["microphone", "upload"], elem_id="voice")
+                    with gr.Column(min_width=240):
+                        audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
+                                            sources=["microphone", "upload"], elem_id="voice")
+                        record_again = gr.Button("Record again", elem_id="record-again", visible=False)
                 gr.HTML(f'<div id="scope">{SCOPE_NOTE}</div>')
 
         turn_outputs = [conversation, examples, history_bar, notice, quick_row, *quick_buttons, transcript,
@@ -557,6 +620,9 @@ def build_ui() -> gr.Blocks:
         for button in example_buttons:
             button.click(on_example, inputs=[button, session], outputs=turn_outputs)
         clear.click(on_clear, inputs=[session], outputs=turn_outputs)
+        # the recorder's own X is hidden; this is the visible way to discard a clip
+        audio_in.change(lambda clip: gr.update(visible=bool(clip)), inputs=[audio_in], outputs=[record_again])
+        record_again.click(lambda: (None, gr.update(visible=False)), outputs=[audio_in, record_again])
         assist_open = gr.State(False)
         assist_toggle.click(lambda is_open: (gr.update(visible=not is_open), not is_open),
                             inputs=[assist_open], outputs=[assistance, assist_open])

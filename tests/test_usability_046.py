@@ -296,3 +296,12 @@ def test_ambiguous_clock_gives_no_verdict_when_the_readings_disagree(gaz):
 def test_hours_intent_does_not_pull_other_categories_into_a_single_record_cue(gaz, index):
     r = ask("Is Sacred North open at 9.15 p.m.?", gaz, index)     # ASR for "Security North"
     assert not {"cafe_harbour", "lounge_aurora"} & set(r.candidates + [r.matched_record_id or ""])
+
+
+def test_medical_request_is_not_called_an_assistance_point(gaz, index):
+    from src.responses import render
+    r = ask("Where can I get medical help?", gaz, index)
+    assert r.matched_record_id == "first_aid_t1"
+    assert "designated assistance point" not in render(r, gaz)
+    r = ask("I need wheelchair assistance in terminal 1", gaz, index)      # assist policy on a PRM point
+    assert "assist_policy" in r.flags and "designated assistance point" in render(r, gaz)

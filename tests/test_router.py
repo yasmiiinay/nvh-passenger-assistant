@@ -253,3 +253,34 @@ def test_confident_clarify_text_still_conflicts(ctx):
                          entities={"gate_id": "B12"})
     out = apply_rules(deterministic, image("lounge", "strong match", ["lounge_aurora"]), None, ctx)
     assert out.conflict
+
+
+# ---- 04.6 round 2: photo clarifications ----
+
+def test_photo_candidates_serving_both_terminals_are_listed_not_asked_by_terminal(ctx):
+    transport = ["shuttle_t1_t2", "rail_station", "taxi_rank_t1", "bus_terminal", "car_park_p1"]
+    out = apply_rules(None, image("transport", "strong match", transport), None, ctx)
+    assert out.decision == "clarify" and "image_list" in out.flags and out.clarification_field is None
+    shown = render_outcome(out, ctx.gaz)
+    assert shown.startswith("This looks like a transport sign. Which do you need:") and "Which terminal" not in shown
+
+
+def test_photo_terminal_question_is_short_and_uses_the_right_article(ctx):
+    out = apply_rules(None, image("accessibility", "strong match", ["prm_point_t1_entrance", "prm_point_t2"]), None, ctx)
+    shown = render_outcome(out, ctx.gaz)
+    assert shown.startswith("This looks like an accessibility sign. Are you in Terminal 1 or Terminal 2?")
+    assert "Assistance Point" not in shown
+
+
+def test_uncertain_photo_of_a_written_sign_asks_what_it_says(ctx):
+    vision = image("baggage", "uncertain", ["baggage_reclaim_t1"])
+    vision.best_anchor = ("a boarding pass or printed document", 0.27)
+    shown = render_outcome(apply_rules(None, vision, None, ctx), ctx.gaz)
+    assert "writing on it, which I cannot read" in shown and "baggage" not in shown
+
+
+def test_quality_note_only_when_the_photo_is_not_a_strong_match(ctx):
+    strong = image("restroom", "strong match", ["restrooms_t2", "restrooms_t1_arrivals"], flags=["bright"])
+    assert "looks bright" not in render_outcome(apply_rules(None, strong, None, ctx), ctx.gaz)
+    weak = image("restroom", "uncertain", ["restrooms_t2"], flags=["bright"])
+    assert "looks bright" in render_outcome(apply_rules(None, weak, None, ctx), ctx.gaz)
