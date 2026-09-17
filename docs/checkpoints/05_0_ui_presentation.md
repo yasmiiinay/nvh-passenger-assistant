@@ -84,10 +84,24 @@ Assistance. "Request assistance" in the header opens the existing
 escalation panel (note, reference number, contact route from the KB).
 Wording states that no one is connected to the chat.
 
-Composer. One text field, the photo and voice inputs side by side, Send
-and Clear conversation, and the scope sentence (not a live agent, no live
-flight status, fictional airport). The photo component keeps
-`image_mode=None` so transparent pictograms are not flattened to black.
+Composer. One text field with Send attached to it; the photo and voice
+inputs sit below as two equal-height (150 px) secondary controls, still
+labelled and still Gradio's own upload and microphone components; the scope
+sentence (not a live agent, no live flight status, fictional airport)
+closes the composer. The photo component keeps `image_mode=None` so
+transparent pictograms are not flattened to black.
+
+Visual pass (final). Passenger messages are right-aligned surface blocks,
+assistant answers plain text under a "Nordhaven Assistant" label, and the
+answer's metadata is one small line: the status chip, the evidence route
+and the place (terminal · zone). Opening hours and step-free access moved
+from the main answer to the evidence panel as "Record facts", built from
+the same `fact_chips` output so the restatement rule and its test still
+cover them. The no-memory sentence appears once, under the "Session
+history" heading. "Clear conversation" is a quiet underlined action in
+that bar; quick replies are compact equal-height outlined buttons;
+"Evidence & details for the last answer" is a collapsed, thin-ruled panel
+directly under the last turn. Page width is capped at 1100 px.
 
 ## Accessibility checks kept from 03.4
 

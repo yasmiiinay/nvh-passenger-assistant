@@ -19,6 +19,7 @@ from __future__ import annotations
 import base64
 import html
 import io
+import re
 import sys
 import time
 import traceback
@@ -53,8 +54,8 @@ SUBTITLE = "Ask about gates, baggage, transport and airport services."
 SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven Assistant is not a live agent "
               "and does not show live flight status. Demonstration system for a fictional airport; "
               "all information is synthetic.")
-HISTORY_NOTE = ("Shown for reference only. The assistant keeps no memory of earlier turns: each request is "
-                "processed on its own, from the text, photo and voice you send with it.")
+HISTORY_NOTE = ("Shown for reference only. The assistant keeps no memory of earlier turns; "
+                "each request is processed independently.")
 EXAMPLES = ["Where is gate B12?", "Where can I collect my baggage?", "How do I get to Terminal 2?",
             "What does this sign mean?"]
 QUICK_REPLY_SLOTS = 3
@@ -123,6 +124,9 @@ def evidence_markdown(outcome: Outcome, gaz) -> str:
                      "from the score together with the gap to the runner-up, not from the number alone.")
     if outcome.matched_record_id:
         lines.append(f"**Matched record:** `{outcome.matched_record_id}`")
+        facts = [chip_text(c) for c in fact_chips(outcome, gaz)[1:]]
+        if facts:
+            lines.append("**Record facts:** " + "; ".join(facts))
     if outcome.candidates:
         lines.append("**Candidates:** " + ", ".join(gaz.records[r]["name"] for r in outcome.candidates if r in gaz.records))
     if outcome.conflict:
@@ -131,7 +135,6 @@ def evidence_markdown(outcome: Outcome, gaz) -> str:
                      f"photo points to {d.get('image_category')}; resolution: {d.get('resolution')}")
     if outcome.flags:
         lines.append("**Flags:** " + ", ".join(outcome.flags))
-    lines.append(HISTORY_NOTE)
     return "\n\n".join(lines)
 
 
@@ -145,6 +148,10 @@ def status_key(outcome: Outcome) -> str:
     if outcome.decision in ("redirect", "conflict", "clarify"):
         return outcome.decision
     return outcome.band or "no reliable match"
+
+
+def chip_text(chip_html: str) -> str:
+    return re.sub(r"<[^>]+>", "", chip_html).strip()
 
 
 def status_chip(key: str) -> str:
@@ -206,6 +213,7 @@ def thumbnail(image_path: str, box: int = 112) -> str | None:
 def passenger_html(text: str | None, image_path: str | None, transcript: str | None, audio: bool) -> str:
     parts = ['<div class="turn turn--user">']
     parts.append('<div class="role">Passenger' + (' · voice' if audio else '') + '</div>')
+    parts.append('<div class="bubble">')
     if image_path:
         thumb = thumbnail(image_path)
         parts.append(f'<img class="thumb" src="{thumb}" alt="Photo you attached">' if thumb
@@ -218,7 +226,7 @@ def passenger_html(text: str | None, image_path: str | None, transcript: str | N
         parts.append(f'<div class="answer">{html.escape(text)}</div>')
     if not text and not audio and image_path:
         parts.append('<div class="answer muted">Sent without a question</div>')
-    parts.append('</div>')
+    parts.append('</div></div>')
     return "".join(parts)
 
 
@@ -228,8 +236,11 @@ def assistant_html(response: str, key: str, chips: list[str]) -> str:
         body = (f'<div class="official"><div class="role">Official information</div>{paragraphs}</div>')
     else:
         body = f'<div class="answer">{paragraphs}</div>'
-    return (f'<div class="turn turn--assistant"><div class="role">Assistant</div>{body}'
-            f'<div class="chips">{status_chip(key)}{"".join(chips)}</div></div>')
+    # the metadata line carries the status, the evidence route and the place;
+    # hours and access details stay in the evidence panel
+    meta = " · ".join(chip_text(c) for c in chips[:2])
+    return (f'<div class="turn turn--assistant"><div class="role">Nordhaven Assistant</div>{body}'
+            f'<div class="meta">{status_chip(key)}<span class="meta-text">{meta}</span></div></div>')
 
 
 def conversation_html(history: list[dict]) -> str:
@@ -310,93 +321,128 @@ def request_assistance(note, session):
 # ---------------------------------------------------------------------------
 
 CSS = """
-.gradio-container { --bg:#f3f2f2; --surface:#eae9e9; --ink:#201e1d; --accent:#ec3013; --accent-deep:#ae1800;
-                    --muted:#605d5d; --rule:rgba(32,30,29,.4); --gutter:40px;
-                    max-width: 1280px !important; margin: 0 auto; background: var(--bg) !important; color: var(--ink); }
+.gradio-container { --bg:#f3f2f2; --surface:#e8e6e6; --ink:#201e1d; --accent:#ec3013; --accent-deep:#ae1800;
+                    --muted:#605d5d; --rule:rgba(32,30,29,.35); --gutter:40px; --gutter-block:calc(var(--gutter) + 12px);
+                    max-width: 1100px !important; width: 100% !important; margin: 0 auto;
+                    background: var(--bg) !important; color: var(--ink); }
 .gradio-container main.app { padding: 0 !important; }
 .gradio-container .block, .gradio-container .form { border: 0 !important; background: none !important; box-shadow: none !important; }
 footer, .built-with { display: none !important; }
 body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui, sans-serif; border-radius: 0 !important; }
 #app { gap: 0; }
+
+/* header */
 #header { display: flex; align-items: center; justify-content: space-between; gap: 16px;
-          padding: 16px var(--gutter); border-bottom: 2px solid var(--rule); }
-#header .mark { color: var(--accent); font-size: 26px; line-height: 1; }
-#header h1 { margin: 0; font-size: 20px; line-height: 1.12; font-weight: 800; }
-#header p { margin: 4px 0 0 0; font-size: 14px; color: var(--muted); }
-#header .brand { display: flex; align-items: center; gap: 16px; }
-#assist-toggle { min-height: 44px; flex: 0 0 auto !important; padding: 0 20px; background: transparent; border: 1px solid var(--rule); }
-#conversation-wrap { padding: 0 !important; }
-#conversation { padding: 4px var(--gutter) 8px; }
-#history-bar { padding: 16px var(--gutter) 0; align-items: center; justify-content: space-between; }
+          padding: 14px var(--gutter); border-bottom: 2px solid var(--rule); }
+#header .mark { color: var(--accent); font-size: 24px; line-height: 1; }
+#header h1 { margin: 0; font-size: 19px; line-height: 1.15; font-weight: 800; }
+#header p { margin: 3px 0 0 0; font-size: 13px; color: var(--muted); }
+#header .brand { display: flex; align-items: center; gap: 14px; }
+#assist-toggle { min-height: 44px; flex: 0 0 auto !important; padding: 0 16px; background: transparent;
+                 border: 1px solid var(--rule); font-weight: 600; font-size: 14px; }
+
+/* empty state */
+#examples { padding: 20px var(--gutter) 0; }
+#examples-label { margin: 0 0 8px; }
+#examples .row { justify-content: flex-start; gap: 8px; }
+#examples .ex { min-height: 44px; flex: 0 0 auto !important; padding: 0 14px; background: var(--bg);
+                border: 1px solid var(--rule); font-weight: 400; font-size: 15px; }
+#examples-hint { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+/* session history */
+#history-bar { padding: 14px var(--gutter) 0; align-items: flex-end; justify-content: space-between; gap: 12px; }
 #history-bar .block { padding: 0 !important; }
-#history-note { font-size: 13px; color: var(--muted); margin-top: 2px; }
-#conversation .turn { display: flex; flex-direction: column; gap: 8px; padding: 16px 0; }
-#conversation .turn--user { padding: 12px 16px; margin-top: 16px; background: var(--surface);
-                            border-left: 2px solid var(--ink); }
-#conversation .turn--user:first-child { margin-top: 0; }
-#conversation .turn--assistant { padding: 16px 0 20px; margin-top: 8px; border-bottom: 1px solid var(--rule); }
-#conversation .turn--assistant:last-child { border-bottom: 0; }
+#history-note { font-size: 13px; color: var(--muted); margin-top: 2px; max-width: 60ch; }
+#clear { background: transparent; border: 0; min-height: 44px; flex: 0 0 auto !important; padding: 0 8px;
+         font-weight: 600; font-size: 14px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+#clear:hover { color: var(--ink); }
+
+/* conversation */
+#conversation-wrap { padding: 0 !important; }
+#conversation { padding: 8px var(--gutter) 4px; display: flex; flex-direction: column; gap: 22px; }
 .role, .subrole, #examples-label { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.turn { display: flex; flex-direction: column; gap: 8px; }
+.turn--user { align-items: flex-end; text-align: left; }
+.turn--user .bubble { background: var(--surface); padding: 12px 16px; max-width: min(60ch, 85%);
+                      display: flex; flex-direction: column; gap: 8px; }
+.turn--user .answer { color: #2b2929; }
+.turn--assistant { align-items: flex-start; }
 .turn--assistant .role { color: var(--accent-deep); }
 .answer, .answer p { font-size: 16px; line-height: 1.55; max-width: 68ch; margin: 0; }
-.answer p + p { margin-top: 8px; }
-.turn--user .answer { color: #444141; }
+.answer p + p { margin-top: 10px; }
 .muted { color: var(--muted); }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; padding: 5px 10px;
-        border: 1px solid var(--rule); background: var(--bg); color: var(--ink); }
-.chip--none { color: var(--accent-deep); border-color: var(--accent-deep); font-weight: 600; }
-.chip--ok { font-weight: 600; }
-.chip--media { align-self: flex-start; background: var(--surface); }
-.thumb { width: 112px; height: 84px; object-fit: contain; background: var(--surface); border: 1px solid var(--rule); }
-.official { padding: 18px 20px; background: var(--surface); border: 1px solid var(--rule);
-            border-left: 2px solid var(--ink); max-width: 620px; }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-top: 2px; }
+.meta-text { line-height: 1.4; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 3px 9px;
+        border: 1px solid var(--rule); background: var(--bg); color: var(--ink); font-weight: 600; }
+.chip--none { color: var(--accent-deep); border-color: var(--accent-deep); }
+.chip--media { align-self: flex-start; background: var(--bg); font-weight: 400; }
+.thumb { width: 112px; height: 84px; object-fit: contain; background: var(--bg); border: 1px solid var(--rule); }
+.official { padding: 16px 18px; background: var(--surface); border-left: 2px solid var(--ink); max-width: 620px; }
 .official p { font-size: 16px; line-height: 1.55; margin: 8px 0 0 0; }
-#examples { padding: 0 var(--gutter) 8px; }
-#examples-label { margin: 24px 0 8px; }
-#examples .row { justify-content: flex-start; }
-#examples .ex { min-height: 44px; flex: 0 0 auto !important; padding: 0 14px; background: var(--bg); border: 1px solid var(--rule); font-weight: 400; font-size: 15px; }
-#examples-hint { font-size: 14px; color: var(--muted); }
-#quick { padding: 0 var(--gutter) 16px; }
-#quick .row { justify-content: flex-start; }
-#quick button { min-height: 44px; flex: 0 0 auto !important; padding: 0 20px; border: 1px solid var(--rule); background: var(--bg); font-weight: 600; }
-#notice { padding: 8px var(--gutter); color: var(--accent-deep); font-size: 15px; }
-#evidence { margin: 0 var(--gutter) 16px !important; width: auto !important; background: var(--surface) !important;
-            border: 1px solid var(--rule) !important; padding: 0 16px 8px !important; }
-#evidence .prose { font-size: 14px; }
-#assistance { padding: 16px var(--gutter) 16px !important; border-top: 1px solid var(--rule) !important; }
-#assistance textarea { background: var(--bg); border: 1px solid var(--rule) !important; font-size: 16px; }
-#assistance button { flex: 0 0 auto !important; width: auto !important; align-self: flex-start; min-height: 48px; padding: 0 20px;
-                     background: var(--accent); color: var(--bg); font-weight: 800; border: 0; }
-#evidence .label-wrap span, #assistance .label-wrap span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-#composer { border-top: 2px solid var(--rule); background: var(--surface); padding: 18px var(--gutter) 22px; margin-top: 8px; }
-#composer textarea, #transcript textarea { min-height: 48px; font-size: 16px; background: var(--bg);
-                    border: 1px solid var(--rule) !important; padding: 12px; }
-#composer label span, #transcript label span { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
-#send { background: var(--accent); color: var(--bg); font-weight: 800; border: 0; min-height: 48px;
-        flex: 0 0 auto !important; padding: 0 24px; align-self: flex-end; }
-#send:hover { background: #dd2b0f; }
-#clear { background: transparent; border: 1px solid var(--rule); min-height: 40px; flex: 0 0 auto !important;
-         padding: 0 16px; font-weight: 600; font-size: 14px; }
-#attachments { align-items: stretch; }
-#attachments > .block { min-height: 220px; }
-#question, #transcript, #assistance .block, #examples .block, #notice { padding-left: 0 !important; padding-right: 0 !important; }
-#scope { font-size: 13px; color: var(--muted); margin-top: 8px; }
-#photo, #voice { background: var(--bg) !important; border: 1px solid var(--rule) !important; }
+
+/* after the last answer */
+#notice { padding: 8px var(--gutter-block) 0; color: var(--accent-deep); font-size: 15px; }
+#quick { padding: 2px var(--gutter-block) 0; }
+#quick .row { justify-content: flex-start; gap: 8px; }
+#quick button { min-height: 44px; flex: 0 0 auto !important; padding: 0 16px; border: 1px solid var(--ink);
+                background: var(--bg); font-weight: 600; font-size: 14px; }
+#transcript { padding: 6px var(--gutter-block) 0 !important; }
+#evidence { margin: 10px var(--gutter-block) 0 !important; width: auto !important; padding: 0 !important;
+            border-top: 1px solid var(--rule) !important; }
+#evidence .label-wrap { padding: 8px 0 !important; }
+#evidence .label-wrap span { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+#evidence .prose { font-size: 13.5px; line-height: 1.5; color: #3a3737; padding-bottom: 8px; }
+#evidence .prose p { margin: 0 0 6px 0; }
+
+/* assistance */
+#assistance { padding: 16px var(--gutter-block) 18px !important; margin-top: 16px; border-top: 1px solid var(--rule) !important; }
+#assistance .block, #assistance .html-container, #assistance .prose { padding: 0 !important; }
 #assistance-note { font-size: 14px; }
+#assistance textarea { background: var(--bg); border: 1px solid var(--rule) !important; font-size: 15px; }
+#assistance button { flex: 0 0 auto !important; width: auto !important; align-self: flex-start; min-height: 44px;
+                     padding: 0 18px; background: var(--ink); color: var(--bg); font-weight: 700; border: 0; font-size: 14px; }
+
+/* composer */
+#composer { border-top: 2px solid var(--rule); background: var(--surface); padding: 14px var(--gutter-block) 14px; margin-top: 24px; gap: 8px; }
+#composer .block { padding: 0 !important; }
+#composer .row { gap: 10px; }
+#question textarea, #transcript textarea { min-height: 48px; font-size: 16px; background: var(--bg);
+                    border: 1px solid var(--rule) !important; padding: 12px 14px; }
+#question label span, #transcript label span, #attachments label span { font-size: 12px; font-weight: 600;
+                    letter-spacing: .04em; color: var(--muted); }
+#question label span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+#send { background: var(--accent); color: var(--bg); font-weight: 800; border: 0; min-height: 48px;
+        flex: 0 0 auto !important; padding: 0 22px; align-self: flex-end; }
+#send:hover { background: #dd2b0f; }
+#attachments { align-items: stretch; max-width: 720px; }
+#attachments > .block, #photo, #voice { min-height: 0 !important; height: 150px !important; max-height: 150px !important;
+                        background: var(--bg) !important; border: 1px solid var(--rule) !important; overflow: hidden; }
+#photo .upload-container, #photo .upload-container > button { height: 100% !important; max-height: 148px !important; }
+#attachments .label-wrap, #attachments label { font-size: 12px; }
+#photo .upload-container, #photo .image-container { height: 100%; }
+#photo .wrap { font-size: 13px; }
+#voice .controls, #voice .audio-container { min-height: 0; }
+#scope { font-size: 12.5px; color: var(--muted); margin: 2px 0 0 -12px; max-width: 80ch; }
 :focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px; }
+
 @media (max-width: 760px) {
-  .gradio-container { --gutter: 18px; }
+  .gradio-container { --gutter: 18px; --gutter-block: 30px; }
   #header { flex-direction: column; align-items: flex-start; }
-  #composer .row, #quick .row, #examples .row, #history-bar { flex-direction: column; align-items: stretch; }
+  #composer .row, #quick .row, #examples .row, #history-bar, #attachments { flex-direction: column; align-items: stretch; }
   #send { align-self: stretch; }
+  .turn--user .bubble { max-width: 100%; }
+  #attachments > .block, #photo, #voice { height: 140px !important; max-height: 140px !important; }
+  #send { width: 100% !important; }
+  #photo .upload-container, #photo .upload-container > button { max-height: 138px !important; }
 }
 """
 
 
 def build_ui() -> gr.Blocks:
     theme = gr.themes.Base(primary_hue="red", neutral_hue="stone",
-                           font=[gr.themes.GoogleFont("Archivo"), "system-ui", "sans-serif"])
+                           font=[gr.themes.GoogleFont("Archivo"), "system-ui", "sans-serif"]
+                           ).set(body_background_fill="#f3f2f2", body_background_fill_dark="#f3f2f2")
     with gr.Blocks(theme=theme, css=CSS, title=f"{AIRPORT} passenger assistant") as demo:
         session = gr.State({})
         with gr.Column(elem_id="app"):
@@ -423,7 +469,7 @@ def build_ui() -> gr.Blocks:
                                     visible=False, lines=1, elem_id="transcript")
             with gr.Accordion("Evidence & details for the last answer", open=False, elem_id="evidence",
                               visible=False) as evidence_panel:
-                evidence = gr.Markdown(value=HISTORY_NOTE)
+                evidence = gr.Markdown(value="")
 
             with gr.Column(visible=False, elem_id="assistance") as assistance:
                 gr.HTML('<div class="role">Assistance request</div>')
@@ -443,7 +489,7 @@ def build_ui() -> gr.Blocks:
                     # image_mode=None keeps the file as uploaded: the default RGB conversion
                     # turns a transparent pictogram into a black square before it reaches us
                     image_in = gr.Image(label="Photo of a sign (optional)", type="filepath", sources=["upload"],
-                                        image_mode=None, height=180, elem_id="photo")
+                                        image_mode=None, height=150, elem_id="photo")
                     audio_in = gr.Audio(label="Ask by voice (optional)", type="filepath",
                                         sources=["microphone", "upload"], elem_id="voice")
                 gr.HTML(f'<div id="scope">{SCOPE_NOTE}</div>')
@@ -460,7 +506,7 @@ def build_ui() -> gr.Blocks:
             return [result["conversation"], gr.update(visible=not has_history), gr.update(visible=has_history),
                     gr.update(value=result["notice"], visible=bool(result["notice"])),
                     gr.update(visible=bool(quick)), *buttons, gr.update(value=heard, visible=bool(heard)),
-                    gr.update(visible=bool(result["evidence"])), result["evidence"] or HISTORY_NOTE,
+                    gr.update(visible=bool(result["evidence"])), result["evidence"],
                     result["session"], "", None, None]
 
         def on_send(text, image_path, audio_path, session):

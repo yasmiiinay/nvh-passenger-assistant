@@ -107,7 +107,13 @@ def test_turns_are_independent_but_stay_on_screen(models_ready, tmp_path, monkey
     assert len(second["session"]["history"]) == 2 and second["session"]["turn"] == 2
     assert "Where is security?" in second["conversation"]      # earlier turn still shown
     assert "Terminal 1" in second["session"]["history"][-1]["passenger"]
-    assert ui.HISTORY_NOTE in second["evidence"]
+    assert ui.HISTORY_NOTE not in second["evidence"]      # stated once, in the session-history bar
+    assert "Record facts:" in ui.run_turn("Where is gate B12?", None, None, {})["evidence"]
+
+
+def test_history_note_is_on_the_page():
+    demo = ui.build_ui()
+    assert any(ui.HISTORY_NOTE in str(getattr(c, "value", "")) for c in demo.blocks.values())
 
 
 def test_unreadable_image_is_handled(models_ready, tmp_path, monkeypatch):
