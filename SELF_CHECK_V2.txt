@@ -1,0 +1,51 @@
+INDEPENDENT FINAL EVALUATION SET v1.1 — SELF CHECK (PRE-EVALUATION AUDIT)
+
+System frozen commit supplied by user:
+a23ab4e229e2950824b66a285919f5f3dc6534c9
+
+Pre-evaluation methodological audit:
+- Before any chatbot evaluation, exactly two rows in the TEXT manifest were corrected for methodological isolation.
+- T2_B019 was changed so that the non-English factor is isolated: it now asks in German about Terminal 2 restrooms, a service that is supported by the Nordhaven KB. The expected decision remains abstain because the prototype is English-only.
+- T2_B020 was changed to a pure out-of-scope service request about currency exchange. Currency exchange is not present in the supplied Nordhaven specification or among the 32 KB records.
+- No other text row was changed.
+- No image, audio, or multimodal manifest or asset was changed.
+- This audit occurred before evaluation.
+- No chatbot output was viewed, generated, inspected, or used to make either correction.
+
+Authorship constraints:
+- Only the supplied fictional Nordhaven airport specification and frozen KB facts were used as ground truth.
+- No previous blind cases, previous blind results, development/held-out queries, regression tests, aliases/gazetteers, thresholds, model outputs, routing rules, previous image/audio assets, known failures, or QA reports were consulted for authoring this v1.1 set.
+- The chatbot was not run.
+- Expected labels for the original manifests were authored before asset generation.
+- The two text-manifest changes documented above are methodological corrections made before evaluation and are now the final pre-evaluation labels.
+
+Counts:
+- Text: 20
+- Images: 8
+- Audio: 6
+- Multimodal: 12
+
+Final text decision distribution:
+- answer: 10
+- clarify: 4
+- redirect: 2
+- abstain: 4
+
+Final text methodological checks:
+1. T2_B019 contains one intended evaluation factor: unsupported input language; its requested airport service itself is supported.
+2. T2_B020 contains one intended evaluation factor: an unsupported currency-exchange service.
+3. No supported answer is assigned to an out-of-scope request.
+4. Ambiguous cases remain clarify rather than being forced into an answer.
+5. No expected text label was derived from chatbot behaviour.
+6. The revised text manifest was SHA-256 hashed after this audit.
+
+Revised text manifest SHA-256:
+e30d6c07d0f5d1ec4893ff03542688d00fac84278d0508a81716bef445d94fa6
+
+Image/audio/multimodal status:
+- Unchanged by this audit.
+- No image expectation depends on OCR.
+- All six speech cases remain TTS because real human recordings were unavailable at authoring time.
+
+Methodological limitation:
+- The author could verify that currency exchange does not appear in the supplied specification or 32-record KB, but unlike pharmacy/hotel/smoking/retail it is not named in the specification's explicit exclusion sentence; its out-of-scope status follows from absence from the supplied airport data.

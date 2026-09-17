@@ -1,0 +1,13 @@
+scenario_id,modality,text,image_id,audio_id,expected_decision,expected_category,expected_record_id,expected_route,reason
+MM2_B01,text+image,I feel sick — does this symbol mean medical help is this way?,IMG2_B01,,answer,medical,first_aid_t1,fuse_consistent,The text asks for medical help and the image clearly depicts the first-aid symbol.
+MM2_B02,text+image,I misplaced something earlier. Is this the office I should follow?,IMG2_B02,,answer,lost_property,lost_property_t1,fuse_consistent,The text describes a lost-item need and the image depicts lost-property semantics.
+MM2_B03,text+image,I'm looking for a proper sit-down meal before boarding. Is this the right sign?,IMG2_B04,,answer,restaurant,restaurant_skyline,fuse_consistent,The text asks for a sit-down meal and the image depicts a sit-down restaurant service.
+MM2_B04,text+image,I'm trying to get to the trains — should I follow this?,IMG2_B05,,conflict,,,flag_cross_modal_conflict,The text indicates the rail station while the image clearly depicts a lounge; both are plausible airport services but incompatible.
+MM2_B05,text+image,I need the lounge. Is this the symbol for it?,IMG2_B06,,conflict,,,flag_cross_modal_conflict,The text indicates the lounge while the image clearly depicts a bus service; both signals are sufficiently clear and incompatible.
+MM2_B06,text+image,What is this sign for?,IMG2_B07,,abstain,,,image_resolves_deictic,"The text is deictic and the image depicts a hotel, which is explicitly outside the Nordhaven KB."
+MM2_B07,voice+image,,IMG2_B06,AUD2_B01,answer,transport,bus_terminal,fuse_consistent,The voice asks about bus-terminal hours and the image depicts the bus service.
+MM2_B08,voice+image,,IMG2_B04,AUD2_B05,answer,restaurant,restaurant_skyline,fuse_consistent,The voice asks for a sit-down restaurant and the image depicts the same service.
+MM2_B09,voice+image,,IMG2_B01,AUD2_B03,conflict,,,flag_cross_modal_conflict,The voice clearly identifies baggage reclaim via belt 5 while the image clearly depicts first aid.
+MM2_B10,voice+image,,IMG2_B05,AUD2_B04,conflict,,,flag_cross_modal_conflict,The voice asks for Terminal 2 security while the image clearly depicts a lounge.
+MM2_B11,image-only,,IMG2_B06,,answer,transport,bus_terminal,image_only,The mildly blurred image still visibly depicts a bus-service pictogram; no OCR is required.
+MM2_B12,voice-only,,,AUD2_B06,answer,transport,taxi_rank_t1,voice_only,"The mild-noise utterance asks about taxi availability, which is covered by the taxi-rank record."

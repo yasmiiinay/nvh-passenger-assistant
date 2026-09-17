@@ -1,0 +1,21 @@
+blind_id,query,expected_decision,expected_category,expected_record_id,reason
+T2_B001,I've come in on an arrival and need to report a wallet I misplaced. Where's the lost-property office?,answer,lost_property,lost_property_t1,"Nordhaven has one Lost Property Office, located in Terminal 1 Arrivals."
+T2_B002,I'm on the departures level in Terminal 1 and need the information desk.,answer,information,info_desk_t1_departures,Terminal 1 has a dedicated Departures information desk on Level 1.
+T2_B003,Which security checkpoint should I head for in Terminal 1?,clarify,security,,"Terminal 1 has both Security North and Security South, so the request does not identify one reliable checkpoint."
+T2_B004,Desk 154 — which check-in hall is that?,answer,check_in,checkin_t1,Desk 154 falls within Terminal 1 check-in desks 101–160.
+T2_B005,Just got off the plane. Which baggage reclaim should I follow?,clarify,baggage,,Baggage reclaim exists in both terminals and no terminal or belt is supplied.
+T2_B006,Can I still get coffee in Terminal 2 at 8:15 tonight?,answer,restaurant,cafe_pier_c,Pier C Café is the Terminal 2 café and is listed as open until 20:30.
+T2_B007,I'm past security in T1 and need a toilet.,answer,restroom,restrooms_t1_departures,The Terminal 1 Departures/Airside restroom record covers the airside areas and Piers A and B.
+T2_B008,I'm arriving by train and need reduced-mobility assistance when I get off.,answer,accessibility,prm_point_rail,A designated PRM assistance point is located at the airport rail-station entrance.
+T2_B009,My gate is A4 — which part of the terminal is that?,answer,gate,gates_pier_a,A4 is within Pier A gates A1–A12 in Terminal 1.
+T2_B010,Is there a covered way from Departures to the car park?,answer,transport,car_park_p1,Car Park P1 is opposite Terminal 1 and is connected to the Departures level by a footbridge.
+T2_B011,How late can I use the Aurora Lounge?,answer,lounge,lounge_aurora,The Aurora Lounge has stated opening hours of 05:00–22:00.
+T2_B012,I'm in Terminal 2 and need medical help. Where's the first-aid room?,answer,medical,first_aid_t1,The First Aid Room is beside Security North in Terminal 1 and its KB scope serves both terminals.
+T2_B013,Where's the help desk?,clarify,information,,"There are multiple information desks in the airport, so the passenger's terminal or area is needed."
+T2_B014,I need airport assistance in Terminal 1 — where should I report?,clarify,accessibility,,"Terminal 1 has more than one designated PRM assistance point, including the main entrance and Check-in Hall."
+T2_B015,Has the 18:40 departure been pushed back?,redirect,information,,Delays and current departure times are live flight information and must come from official live sources.
+T2_B016,Is my arriving flight on time right now?,redirect,information,,Current arrival status is volatile flight information and is not answered from the static KB.
+T2_B017,Can you reserve a taxi to collect me at the terminal?,abstain,transport,,The KB can describe the taxi rank but does not support booking or reservation actions.
+T2_B018,Can I buy a phone charger somewhere after security?,abstain,,,"The specification contains no shops other than food, so a charger retailer is not supported by the KB."
+T2_B019,Wo finde ich die Toiletten in Terminal 2?,abstain,,,"The request concerns a supported Nordhaven service (Terminal 2 restrooms), but it is in German; for the English-only prototype the safe expected behaviour is abstention."
+T2_B020,Where can I exchange currency in the airport?,abstain,,,"Currency exchange is not present in the supplied Nordhaven specification or any of the 32 KB records, so the request is outside the supported airport knowledge base."

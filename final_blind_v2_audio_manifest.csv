@@ -1,0 +1,7 @@
+audio_id,spoken_text,expected_decision,expected_category,expected_record_id,audio_condition,recording_source,reason
+AUD2_B01,What time does the bus terminal close tonight?,answer,transport,bus_terminal,clean,TTS,The Bus Terminal has stated opening hours of 05:00–00:30.
+AUD2_B02,Is Harbour Café open at half past nine tonight?,answer,restaurant,cafe_harbour,clean,TTS,"Harbour Café is listed as open until 22:00, so 21:30 is within its stated hours."
+AUD2_B03,They've sent my luggage to belt five. Which reclaim area is that?,answer,baggage,baggage_reclaim_t1,identifier,TTS,Belt 5 falls within Terminal 1 baggage belts 1–6.
+AUD2_B04,I'm in Terminal 2 and need the security checkpoint. Which way is it?,answer,security,security_t2,terminal_specific,TTS,Terminal 2 has a single security checkpoint on the Departures level.
+AUD2_B05,"I've checked in and just need somewhere to sit down and eat before boarding, where's the restaurant?",answer,restaurant,restaurant_skyline,fast_natural,TTS,Skyline Restaurant is the KB's sit-down restaurant in Terminal 1 Airside Plaza.
+AUD2_B06,Are taxis available after eleven at night?,answer,transport,taxi_rank_t1,mild_noise,TTS,The taxi-rank record states that taxis are available at all times; only the staffed marshal has limited hours.
