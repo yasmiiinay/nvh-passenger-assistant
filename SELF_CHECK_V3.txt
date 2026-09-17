@@ -1,0 +1,180 @@
+SELF CHECK - INDEPENDENT EVALUATION SET v3 (Nordhaven International Airport, NVH)
+================================================================================
+Date written: 2026-09-17
+Author role: independent evaluation-set author. The chatbot was built by someone
+else and has not been run, inspected or approximated in any way.
+
+1. WHAT I USED
+--------------
+Only the two attached files named in the brief:
+  - airport_spec.md   (frozen specification v1)
+  - airport_kb.json   (32 records, kb_version 1.0)
+Every label was written from those two files. Record ids, identifier ranges,
+opening hours, availability notes and accessibility notes were read directly
+from the KB; the asymmetries (no lounge, no lost-property office and no taxi
+rank in Terminal 2; gates only in piers A, B and C; excluded services) were read
+from spec sections 1, 3, 4 and 6.
+
+2. WHAT I DID NOT CONSULT
+-------------------------
+I did not see, request, infer from or use: the chatbot's code, prompts, rules,
+word lists, gazetteers, thresholds, routing logic, earlier test sets, earlier
+results, development queries, error analyses, known weaknesses or any report
+about it. I did not run the chatbot, did not simulate running it, and did not
+tune, reorder or reword any case against its behaviour. No web source and no
+real airport's data were used; nothing outside the two attached files informed
+any row.
+
+3. PRIOR KNOWLEDGE OF THE CHATBOT
+---------------------------------
+None. Before writing this set I knew nothing about the system under test beyond
+the brief's own description of it as a passenger-assistance chatbot for this
+fictional airport, and the decision vocabulary (answer / clarify / redirect /
+abstain / conflict) and route vocabulary that the brief itself defines. I hold
+no knowledge of its implementation, its earlier evaluations or its failure
+modes. Nothing in this set was written to exploit or avoid a known behaviour,
+because I know of none.
+
+4. FILES AND COUNTS
+-------------------
+  final_blind_v3_text.csv             20 rows  (T3_B001 - T3_B020)
+  final_blind_v3_images_manifest.csv   8 rows  (IMG3_B01 - IMG3_B08)
+  final_blind_v3_audio_manifest.csv    6 rows  (AUD3_B01 - AUD3_B06)
+  final_blind_v3_multimodal.csv       12 rows  (MM3_B01 - MM3_B12)
+  generate_blind_v3_audio.sh                   (4 TTS clips)
+  SELF_CHECK_V3.txt                            (this file)
+All CSVs are UTF-8 with a header row and exactly the columns the brief lists,
+in the brief's order, with no extra columns.
+
+5. DECISION DISTRIBUTION
+------------------------
+Text (20):        answer 11 | clarify 4 | redirect 2 | abstain 3
+Images (8):       answer 2  | clarify 4 | abstain 2
+Audio (6):        answer 4  | clarify 2
+Multimodal (12):  answer 6  | clarify 3 | abstain 1 | conflict 2
+
+Text categories used: gate 2, security 2, check_in 1, baggage 1, lost_property 1,
+information 1, lounge 1, restaurant 2, restroom 2, accessibility 1, transport 2,
+medical 1, plus 3 rows with no category (abstain). All categories come from the
+brief's fixed list. Every expected_record_id used exists in airport_kb.json:
+gates_pier_a, gates_pier_b, security_t2, lounge_aurora, rail_station,
+lost_property_t1, baggage_reclaim_t1, baggage_reclaim_t2, prm_point_rail,
+shuttle_t1_t2, restrooms_t2, first_aid_t1, restaurant_skyline, cafe_pier_c,
+taxi_rank_t1, bus_terminal, info_desk_t2.
+
+Image quality strata: clean 2, photographed 2, angled 1, blurred 1,
+out_of_scope 2 (both abstain, as required).
+Audio conditions: clean 2, fast_natural 1, identifier 1, mild_noise 1,
+terminal_specific 1.
+Multimodal routes: image_only 3, voice_only 3, image_resolves_deictic 1,
+fuse_consistent 3, flag_cross_modal_conflict 2. All five routes appear.
+Multimodal modalities: image-only 3, voice-only 3, text+image 4, voice+image 2.
+
+Phrasing mix in the text file: short fragments (T3_B001, T3_B012, T3_B013),
+long or indirect requests (T3_B005, T3_B010, T3_B015), a stated location
+(T3_B009, T3_B010, T3_B014), a stated time (T3_B004, T3_B011, T3_B017),
+identifiers (gate A7, desk 214, belt 8, gate D4), and passenger typos or
+missing apostrophes (T3_B002, T3_B006, T3_B008, T3_B012, T3_B018).
+
+6. LABELS CHANGED AFTER FIRST WRITING, AND WHY
+----------------------------------------------
+a) T3_B003 (lounge in Terminal 2). First written as abstain, on the reasoning
+   that Terminal 2 has no lounge. Changed to answer / lounge_aurora: the KB does
+   hold the service, and that record's availability_note answers the request
+   exactly as asked ("Terminal 2 has no lounge; Terminal 2 passengers cannot
+   access the Aurora Lounge after passing Terminal 2 security"). Spec section 3
+   says this grounded negative is the intended correct answer, so labelling it
+   abstain would have scored a correct grounded "no" as a failure.
+
+b) T3_B009 (accessible toilet on the Terminal 2 arrivals level). Same change and
+   same reason: restrooms_t2 states in its accessibility notes that the arrivals
+   level has none and points to the departures level, so one record answers it.
+
+c) A drafted case "Can you book me a taxi to the city for seven o'clock?" was
+   removed rather than relabelled. It mixed two things at once - an action the
+   assistant cannot perform, and a service (taxi_rank_t1) the KB does hold with
+   a note covering exactly this - so no single label tested one thing
+   (labelling rule 2). Its slot went to T3_B020 (visa question, abstain).
+
+d) Conflict rows MM3_B10 and MM3_B11: expected_category was first filled with
+   the category of the spoken or typed side. Left empty in the final file,
+   because in a cross-modal conflict neither modality is the ground truth and
+   naming one would silently prejudge the resolution the route already
+   specifies.
+
+e) expected_record_id is empty on all redirect rows (T3_B016, T3_B017). The
+   brief asks for a record id on answer rows only and for a category on
+   redirect rows; flight_information is named in the reason text instead, so a
+   scorer can see which record carries the redirect without the id being scored
+   as a retrieval target.
+
+f) AUD3_B02 (fast_natural) and AUD3_B04 (mild_noise) were first written as TTS.
+   Changed to human: `say` cannot produce a genuinely fast natural delivery or
+   real background noise in a single deterministic pass, and the brief forbids
+   variants and take selection. Stating TTS would have misdescribed how the
+   files are actually made. The remaining four audio rows stay TTS and are
+   produced by generate_blind_v3_audio.sh with a fixed voice and rate.
+
+7. RULE COMPLIANCE NOTES
+------------------------
+- All labels were written from the specification and KB before any image or
+  audio file is created; no media file exists yet.
+- No expectation depends on reading text inside an image. Every image
+  description is a symbol, a photographed pictogram without lettering, or an
+  ordinary non-airport scene. Where a real sign would carry words, the
+  description explicitly removes them, and the label is what a passenger could
+  take from the symbol alone.
+- Images are labelled answer only where the symbol maps to exactly one KB
+  record (first aid, taxi rank - both singletons in the KB); otherwise clarify
+  with the category.
+- No case combines ambiguity with a second stress factor. There are no
+  non-English cases at all: a foreign-language request would confound language
+  support with the decision being measured, so that factor was dropped rather
+  than split (labelling rule 2).
+- Images contain no identifiable people, no boarding passes or documents, and
+  no third-party logos. No real airport imagery is required by any description.
+
+8. LIMITATIONS OF THIS SET
+--------------------------
+- Size. 20 text, 8 image, 6 audio and 12 multimodal cases. Several cells hold
+  only one or two rows (redirect, conflict, medical, lounge), so per-cell
+  accuracy will carry very wide intervals and should be read as evidence of
+  presence or absence of a behaviour, not as a rate.
+- Single annotator. Every label is mine, written once from the two files, with
+  no second labeller and therefore no inter-annotator agreement figure.
+- Media not yet made. Image and audio labels describe files that do not exist
+  yet. If an image cannot be sourced or drawn as described, the description and
+  the label must be changed together before any evaluation and the change
+  recorded here; the same applies to any clip with a technical fault.
+- The mild_noise condition is uncontrolled: a human recording in a moderately
+  noisy room is not a measured signal-to-noise ratio, so AUD3_B04 tests
+  robustness qualitatively only.
+- The KB's hours and timetables are synthetic and two records are marked
+  medium or high volatility. T3_B004 and T3_B011 depend on stated hours; if the
+  KB wording is tuned on the dev split as the kb_meta note allows, those two
+  rows would need re-checking against the frozen KB before the run.
+- Clarify is judged only by category, not by the set of candidate records, so a
+  system that asks the right kind of follow-up question for the wrong reason
+  scores the same as one that asks it for the right reason.
+- Conflict appears only in the multimodal file, by the brief's definition, so
+  the two conflict rows carry the whole weight of that behaviour.
+- The set measures decision and record selection, not answer wording, tone,
+  latency or accessibility of the phrasing, and it contains no multi-turn
+  dialogue: every case is a single opening request.
+- No live-data case can be verified beyond the redirect itself, since the
+  correct behaviour for flight status is to leave the KB entirely.
+
+9. FREEZING
+-----------
+Nothing in this set may change once hashed. After the images and clips exist,
+run the brief's commands unchanged, in the directory holding the set:
+
+  shasum -a 256 final_blind_v3_text.csv final_blind_v3_images_manifest.csv \
+    final_blind_v3_audio_manifest.csv final_blind_v3_multimodal.csv \
+    SELF_CHECK_V3.txt > blind_v3_manifests_sha256.txt
+  shasum -a 256 IMG3_B0*.png > blind_v3_images_sha256.txt
+  shasum -a 256 AUD3_B0*.wav > blind_v3_audio_sha256.txt
+
+Hashes are deliberately not recorded here: this file is itself hashed, and any
+production-time change to an image description (section 8) must be written into
+section 6 before hashing. After hashing, nothing changes.

@@ -1,0 +1,13 @@
+scenario_id,modality,text,image_id,audio_id,expected_decision,expected_category,expected_record_id,expected_route,reason
+MM3_B01,image-only,,IMG3_B03,,answer,medical,first_aid_t1,image_only,"The first-aid symbol alone maps to first_aid_t1, the only medical record."
+MM3_B02,image-only,,IMG3_B01,,clarify,baggage,,image_only,The reclaim symbol fits baggage_reclaim_t1 and baggage_reclaim_t2 and there is no text to narrow the terminal.
+MM3_B03,image-only,,IMG3_B08,,abstain,,,image_only,A domestic photograph of a cat is outside everything the airport data covers.
+MM3_B04,voice-only,,,AUD3_B01,answer,lost_property,lost_property_t1,voice_only,The spoken request names the service and lost_property_t1 is the only such office.
+MM3_B05,voice-only,,,AUD3_B02,clarify,restaurant,,voice_only,Three catering records match the spoken request and nothing in it decides between them.
+MM3_B06,voice-only,,,AUD3_B03,answer,gate,gates_pier_b,voice_only,The spoken identifier B12 falls in the B1-B18 range of gates_pier_b.
+MM3_B07,text+image,Where is this?,IMG3_B06,,answer,transport,taxi_rank_t1,image_resolves_deictic,The words point at the photo and the taxi symbol supplies the service; taxi_rank_t1 is the only taxi rank.
+MM3_B08,text+image,"I am in Terminal 2, where is the nearest one of these?",IMG3_B04,,answer,restaurant,cafe_pier_c,fuse_consistent,The image gives the category and the text gives the terminal; cafe_pier_c is the only catering in Terminal 2.
+MM3_B09,text+image,Which belt do I collect my bag from in Terminal 1?,IMG3_B01,,answer,baggage,baggage_reclaim_t1,fuse_consistent,"Words and photo agree on baggage reclaim and the stated terminal selects baggage_reclaim_t1, belts 1-6."
+MM3_B10,text+image,Where is the toilet?,IMG3_B04,,conflict,,,flag_cross_modal_conflict,"The words ask for a restroom while the photographed symbol is catering, so the two modalities point to different services."
+MM3_B11,voice+image,,IMG3_B05,AUD3_B06,conflict,,,flag_cross_modal_conflict,"The voice asks for a toilet while the photo shows a security screening symbol, so the modalities disagree."
+MM3_B12,voice+image,,IMG3_B04,AUD3_B02,clarify,restaurant,,fuse_consistent,"Voice and photo agree on catering, but three catering records still match and neither modality gives a terminal."
