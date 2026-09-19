@@ -1,6 +1,6 @@
 # Final evidence index and assignment coverage audit
 
-Repository: https://github.com/yasmiiinay/nvh-passenger-assistant (main at `4694f29` when indexed)
+Repository: https://github.com/yasmiiinay/nvh-passenger-assistant (main at `f3a207f` when indexed; README and index updated afterwards)
 Deployed prototype: https://huggingface.co/spaces/yasmincinar/nvh-assistant (Space commit `030552f`, deployment-only subset of source commit `081b279`; behavioural core identical to freeze `2d05b1c` and Blind v3 evaluated commit `f2a7ed9`)
 
 Status values: **COMPLETE** = evidence in the repository is sufficient to support the report claim; **PARTIAL** = evidence exists but has a stated gap; **MISSING** = no evidence yet; **NOT REQUIRED** = not applicable to this design. Paths are relative to the repository root; `E/` = `docs/report/evidence/`, `C/03_2` etc. = `docs/checkpoints/03_2_*.md` and so on.
@@ -14,7 +14,7 @@ Status values: **COMPLETE** = evidence in the repository is sufficient to suppor
 | Run instructions | COMPLETE | `README.md` §Running the assistant, §Running the text pipeline, §Running the vision and speech pipelines | `scripts/smoke_test.py` | — | — | — |
 | Repository structure | COMPLETE | `README.md` §Repository layout | tree: `app/ src/ configs/ data/ evaluation/ scripts/ tests/ docs/` | — | — | — |
 | Start-up / smoke verification | COMPLETE | `E/deployment_smoke_test.md` (hosted); `scripts/smoke_test.py`, `tests/` (15 files) | `C/03_3` §2b/§5 (identical results on two machines) | — | — | — |
-| Local vs hosted environment difference | PARTIAL | `E/deployment_smoke_test.md` §Deployment (3.14 vs 3.12, ZeroGPU, Hub weights, ephemeral FS) | `README.md` §Hugging Face Space status | — | — | **README §Hugging Face Space status is stale** (says the real interface is not yet on the Space); a docs-only update is needed before submission |
+| Local vs hosted environment difference | COMPLETE | `E/deployment_smoke_test.md` §Deployment (3.14 vs 3.12, ZeroGPU, Hub weights, ephemeral FS) | `README.md` §Hugging Face Space status (updated to the deployed state) | — | — | state both Python versions; not identical environments |
 
 ## 2. Data acquisition and exploration — 15 %
 
@@ -54,8 +54,8 @@ Status values: **COMPLETE** = evidence in the repository is sufficient to suppor
 | KB retrieval cascade | COMPLETE | `src/retrieval.py` docstring (frozen order), `src/kb.py` | `C/03_1`, `C/03_2` §4 | text | — | deterministic before semantic |
 | Uncertainty / conflict handling | COMPLETE | `configs/settings.py` thresholds; `src/retrieval.py::decide`; router R4 | `C/03_2` §5, `C/04_4` §1 | thresholds table | — | — |
 | Template response generation | COMPLETE | `src/responses.py` | `C/04_6` | text | — | no generative model |
-| Five modality combinations | COMPLETE | `src/router.py`; `C/03_4` §4 (routing evaluation over combinations); Blind v3 multimodal set (image-only, voice-only, text+image, voice+image) | smoke tests cover text, image, voice, image+text on the Space | — | — | voice+image was evaluated (03.4, v3) but not smoke-tested on the Space |
-| Design rationale and alternatives considered | PARTIAL | `C/03_2` §5–6, `C/03_3` §1, §3, `configs/settings.py` comments, `README.md` §Versions | "Architecture Freeze v1.1" and "Evidence Pack 02B2" are cited by the README but **are not in the repository** (they live in the Claude project docs) | text | freeze doc as appendix ✓ | either add the freeze document to `docs/` or rely on checkpoint files; decide before submission |
+| Five modality combinations | COMPLETE | `src/router.py`; `C/03_4` §4 (routing evaluation over combinations); Blind v3 multimodal set (image-only, voice-only, text+image, voice+image) | all five exercised on the Space: smoke tests A–E plus live-microphone tests F (voice) and G (voice + image) | — | — | — |
+| Design rationale and alternatives considered | COMPLETE | `C/03_2` §5–6 (threshold selection, category-cue experiment), `C/03_3` §1, §3 (CLIP prompt design, Whisper size choice), `C/03_4` §3 (routing design), `C/04_5` (post-blind revision decisions), `configs/settings.py` comments, `README.md` §Versions | — | text | checkpoint sections ✓ | rationale is evidenced across the existing checkpoint artefacts; the earlier planning documents (Architecture Freeze v1.1, Evidence Pack 02B2) are deliberately not added to the repository — the report cites the checkpoints |
 | Explicit non-features | COMPLETE | `README.md`; `E/architecture_multimodal_pipeline.png` footer; `configs/settings.py` (`enable_ocr=False`, `similarity_backend="numpy"`) | `E/ethics/` | one sentence | — | no generative LLM, no OCR, no runtime FAISS, no live API |
 
 ## 5. Training / evaluation — 20 %
@@ -82,12 +82,12 @@ Status values: **COMPLETE** = evidence in the repository is sufficient to suppor
 |---|---|---|---|---|---|---|
 | Deployed prototype link | COMPLETE | https://huggingface.co/spaces/yasmincinar/nvh-assistant | `E/deployment_smoke_test.md` §Deployment (commits, hardware, SDK) | link | — | public; cite the `huggingface.co/spaces/...` URL |
 | Exact deployment record | COMPLETE | `E/deployment_smoke_test.md` | local branch `deploy-space`; README YAML block | small table | ✓ | deployment-only subset, README `short_description` differs by one line |
-| UI screenshots | COMPLETE | `E/ui_deployment_text.png`, `ui_deployment_multimodal.png`, `ui_deployment_uncertainty.png` (+ four `extra_*`) | `docs/report/screenshots/` (pre-deployment UI states: empty, strong match, clarify, conflict, evidence panel, narrow 400 px); `docs/checkpoints/images/` | **Fig.** one screenshot or 2–3 panel | ✓ | deployment shots are 1512×691 viewport captures |
+| UI screenshots | COMPLETE | `E/ui_deployment_text.png`, `ui_deployment_multimodal.png`, `ui_deployment_uncertainty.png` (+ four `extra_*`, + `ui_deployment_live_voice*.png` at retina resolution) | `docs/report/screenshots/` (pre-deployment UI states: empty, strong match, clarify, conflict, evidence panel, narrow 400 px); `docs/checkpoints/images/` | **Fig.** one screenshot or 2–3 panel | ✓ | deployment shots are 1512×691 viewport captures |
 | Text / image / voice-upload / multimodal / uncertainty smoke tests | COMPLETE | `E/deployment_smoke_test.md` §Smoke tests; `E/deployment_smoke_test_captures.md` (verbatim page text) | screenshots | — | ✓ | inputs chosen to avoid all Blind v3 items |
 | Structured five-scenario table | COMPLETE | `E/user_testing/structured_user_testing.md` (+ `.csv`) | evidence-class note; captures file | **Table** | ✓ full version | integration verification by the developer, no external participants — never "user study" |
 | Evidence audit of the scenarios | COMPLETE | `E/user_testing/structured_user_testing.md` §Evidence classes | commit `64cf04c` | — | ✓ | expectations for scenarios 3–5 are post-hoc, stated |
-| Live microphone capture on the Space | PARTIAL | — | `E/deployment_smoke_test.md`, `E/user_testing/` §Limitations, `C/03_4` | — | — | upload path verified; live mic not recorded anywhere; a small verification gap to close or disclose |
-| Voice + image on the deployed Space | PARTIAL | evaluated offline (`C/03_4`, Blind v3 MM3_B11–12) | — | — | — | not among the five smoke tests; disclose or run once manually |
+| Live microphone capture on the Space | COMPLETE | `E/deployment_smoke_test.md` §Live-microphone verification (test F), `E/ui_deployment_live_voice.png` | `E/user_testing/` §Limitations | — | ✓ | manual verification, 2026-09-19; upload path verified separately in test C |
+| Voice + image on the deployed Space | COMPLETE | `E/deployment_smoke_test.md` §Live-microphone verification (test G), `E/ui_deployment_live_voice_photo.png` | evaluated offline in `C/03_4` and Blind v3 MM3_B11–12 | — | ✓ | image-led route with the spoken terminal narrowing; verification only, not an evaluation case |
 | Manual QA / usability evidence (pre-deployment) | COMPLETE | `docs/report/manual_usability_diagnostics_046.md`; `C/04_1`–`04_6`; `tests/test_usability_046.py` | screenshots in `docs/report/screenshots/` | mention | ✓ | manual QA, not blind evaluation |
 
 ## 7. Ethics / regulatory — 15 %
@@ -114,7 +114,7 @@ Status values: **COMPLETE** = evidence in the repository is sufficient to suppor
 | Data-exploration outputs | COMPLETE | `E/data_exploration/` (9 files) |
 | KB schema | COMPLETE | `docs/report/appendix_A_nvh_airport_spec_and_kb.docx`; `E/data_exploration/kb_dataset_summary.md`; `docs/dataset_schemas.md` |
 | Preprocessing evidence | COMPLETE | `E/preprocessing/` (7 files) |
-| Model design | PARTIAL | source + architecture figure + checkpoints; freeze/rationale document not in the repository |
+| Model design | COMPLETE | source + architecture figure + checkpoint rationale (`C/03_2`–`C/04_5`) |
 | Component evaluation | COMPLETE | `C/03_2`, `C/03_3`, `C/03_4`, `C/04_4`, `C/04_5` |
 | Metrics tables / graphs | PARTIAL | tables complete (checkpoints + Blind v3 summary); no committed graph |
 | UI screenshots | COMPLETE | `E/ui_deployment_*.png`; `docs/report/screenshots/` |
@@ -128,18 +128,18 @@ Status values: **COMPLETE** = evidence in the repository is sufficient to suppor
 
 ## Counts
 
-COMPLETE 71 · PARTIAL 9 · MISSING 1 · NOT REQUIRED 0 (81 indexed rows across the seven areas and the submission list; the submission list re-counts some items).
+COMPLETE 76 · PARTIAL 4 · MISSING 1 · NOT REQUIRED 0 (81 indexed rows across the seven areas and the submission list; the submission list re-counts some items).
 
 ## Final gap audit
 
 **A. Genuinely missing.** The Harvard reference list — it does not exist yet and belongs to the report-writing stage. Nothing else is missing.
 
 **B. Partial.**
-1. README §Hugging Face Space status is out of date (pre-deployment wording). Docs-only fix; no behavioural change.
-2. The design-rationale document ("Architecture Freeze v1.1") is cited by the README but not in the repository; rationale is otherwise scattered across `C/03_2`, `C/03_3`, `C/04_5` and `configs/settings.py` comments. Either add the document under `docs/` or cite the checkpoints.
+1. ~~README §Hugging Face Space status out of date~~ — updated (docs-only).
+2. ~~Design-rationale document not in the repository~~ — closed by decision: rationale is evidenced across the existing checkpoint artefacts and the report cites those; the planning documents are not added.
 3. No committed confusion matrix or metrics graph; all evaluation results are tables. Optional: one figure generated from the committed Blind v3 JSON (no new runs).
-4. Live microphone capture on the deployed Space is unverified.
-5. Voice + image was evaluated offline and in Blind v3 but not smoke-tested on the Space.
+4. ~~Live microphone capture unverified~~ — verified manually on 2026-09-19 (test F).
+5. ~~Voice + image not smoke-tested on the Space~~ — verified manually on 2026-09-19 (test G).
 6. The multimodal scenario manifest (68 rows) is described in `C/03_4` and `docs/dataset_schemas.md` but was not part of the 05.3 exploration package.
 7. Local Python 3.14 vs Space Python 3.12 — documented, must be stated rather than assumed identical.
 8. Deployment screenshots are viewport captures (1512×691); higher-resolution retakes are optional.

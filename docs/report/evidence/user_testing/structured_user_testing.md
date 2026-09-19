@@ -76,12 +76,13 @@ error occurred. All five scenarios met it.
   integration of the hosted application, not accuracy, coverage or usability
   with passengers. No satisfaction or task-time data was collected and none is
   claimed.
-- Voice was verified through the recorder's **upload** path with a synthesised
-  clip, because the automated browser session had no microphone. Upload and
-  microphone recordings share the same audio gate, Whisper and text pipeline,
-  but **direct live microphone capture in the deployed Space remains a small,
-  unverified deployment step**. If a live recording is made before submission,
-  this table should be updated with its result.
+- Voice in scenario 3 was verified through the recorder's **upload** path with
+  a synthesised clip, because the automated browser session had no microphone.
+  Live browser microphone capture was subsequently verified manually on the
+  deployed Space with a fresh non-blind query, and a fresh voice-plus-image
+  interaction was completed successfully through the hosted interface
+  (`deployment_smoke_test.md`, tests F and G, 2026-09-19). Those two checks are
+  integration verifications and are not added to the table above as scenarios.
 - The scenarios were chosen by the developer with knowledge of the system;
   they avoid Blind v3 material but are not a random sample of passenger
   requests.
@@ -118,5 +119,5 @@ follow-up. Two minor inconsistencies were retained as limitations rather than
 corrected: an evidence line that reports the terminal as unknown after the
 text had already narrowed the candidates, and an abstention explanation that
 chose the less precise of two applicable reasons. Voice was verified through
-the recorder's upload path; live microphone capture remains a small
-verification gap.
+the recorder's upload path and, separately, through live microphone capture
+including one voice-plus-image turn.

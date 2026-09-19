@@ -108,22 +108,31 @@ python scripts/audit_foundation.py       # must print ALL CHECKS PASS
 
 ## Hugging Face Space status
 
-Space `yasmincinar/nvh-assistant` (Gradio SDK, MIT) was created on 12 Sep 2026
-and a hello-world version of `app/app.py` passed the deployment smoke test
-there; the real interface has not yet been built on the Space.
+The final build is deployed and public at
+https://huggingface.co/spaces/yasmincinar/nvh-assistant (Gradio SDK, MIT,
+ZeroGPU hardware; inference runs on CPU). The Space holds a deployment-only
+subset of this repository — `app/`, `src/`, `configs/`, `requirements.txt`,
+this README and the `data/` files the application loads at run time — pushed
+from the local `deploy-space` branch; `docs/`, `scripts/`, `tests/`,
+`evaluation/`, the evaluation media and all blind-set material stay here.
+The Space's behavioural core is byte-identical to the frozen build `2d05b1c`
+that Blind Evaluation v3 measured; the deployment record, the exact commits
+and the smoke test of text, photo, voice and photo + text through the hosted
+interface are in `docs/report/evidence/deployment_smoke_test.md`.
+
 Observed facts: the free plan offers **ZeroGPU only** (CPU Basic is not
 selectable), and ZeroGPU's startup check requires at least one
 `@spaces.GPU`-decorated function — hence the inert `zerogpu_probe()` in
-`app/app.py`. The YAML block at the top of this README is the Space
-configuration (`app_file`, pinned `sdk_version`, `python_version: 3.12` so
-numpy installs from a wheel).
+`app/app.py`. The Space runs Python 3.12 while the local evaluation
+environment is Python 3.14; model weights are not committed and are
+downloaded from the Hub on first use of each modality, so the first photo
+and the first voice request on a cold Space are slow. The YAML block at the
+top of this README is the Space configuration (`app_file`, pinned
+`sdk_version`, `python_version: 3.12`); the Space copy differs from this file
+only in a `short_description` shortened to the Hub's 60-character limit.
 
 **Source of truth is this GitHub repository.** The Space is updated by
-pushing `main` to it at deployment checkpoints (final deployment), not automatically;
-the pinned `requirements.txt` has not yet been built on the ZeroGPU image,
-and that build is the first step of the final deployment, not a side effect
-of every commit. The YAML block above is what makes a plain `git push` to the
-Space deployable when that time comes.
+pushing `deploy-space` to it at deployment checkpoints, never automatically.
 
 ## Running the text pipeline
 

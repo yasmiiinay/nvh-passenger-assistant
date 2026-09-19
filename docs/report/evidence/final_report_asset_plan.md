@@ -50,7 +50,7 @@ Do not duplicate: a figure or table that is in the main body is only cited, not 
 | 3 | Preprocessing — one text pipeline for typed and spoken input, image path, what is inside the HF processors | 300 | Table 2 | index §3 |
 | 4 | Model and multimodal fusion design — MiniLM cascade, CLIP as retrieval, Whisper hand-off, router R0–R6, uncertainty policy, template responses; explicit non-features | 450 | Fig. 1, (Table 7) | index §4 |
 | 5 | Evaluation and critical analysis — component results, Blind v3 protocol and results, failure analysis, threshold and margin trade-offs, harness-vs-UI limitation, why v1–v3 is not a series | 750 | Table 3, Table 4, (Fig. 5) | index §5 |
-| 6 | Deployment and structured testing — Space, smoke tests, five scenarios, integration-verification framing, live-mic gap | 300 | Fig. 4, Table 5 | index §6 |
+| 6 | Deployment and structured testing — Space, smoke tests, five scenarios, integration-verification framing, live-microphone and voice+photo checks | 300 | Fig. 4, Table 5 | index §6 |
 | 7 | Ethics and regulatory considerations — data minimisation as implemented, media risks, ASR/vision bias, English-only, accessibility, false certainty, no live data / handover, GDPR-oriented assessment | 350 | Table 6 | index §7 |
 | 8 | Conclusion and future work | 130 | — | index gap audit §B, ethics §12 |
 | | **Total** | **2 900** | | |

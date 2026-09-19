@@ -59,8 +59,27 @@ not repeated afterwards.
 
 The live-microphone recording path was not exercised in this run (the
 automated browser session had no microphone); voice was verified through the
-recorder's upload path, which shares the same Whisper and text pipeline. A
-short live recording by the author is recommended before submission.
+recorder's upload path, which shares the same Whisper and text pipeline. The
+live path was verified manually the following day — see below.
+
+## Live-microphone verification (2026-09-19, manual, same Space commit)
+
+Two further integration checks were performed by the author in Chrome on the
+deployed Space, recording through the MacBook's built-in microphone. Inputs
+are fresh and belong to no blind set; these are deployment verifications, not
+evaluation cases, and are not added to any metric.
+
+| # | Modality | Input | Deployed outcome | Pass |
+|---|---|---|---|---|
+| F | Voice only, live microphone | Spoken: "Is there a first aid room in Terminal 1?" | Heard as *"Is there a first-aid room in Terminal 1?"*; answer *"First Aid Room is in Terminal 1, Check-in Hall (beside Security North) (Departures, Level 1). North end of the Check-in Hall, immediately beside the Security North entrance."* Hours 04:00–23:00, out of hours call the assistance line; Access step-free, induction loop, accessible toilet nearby; Strong match; From your voice; editable transcript shown | Pass |
+| G | Voice (live microphone) + photo | `data/images/files/img_003.png` (AIGA check-in pictogram, dev split, in no blind set) + spoken: "I'm in Terminal 1. Where can I find this?" | Heard as *"I am in terminal 1. Where can I find this?"*; answer *"From the photo this looks like a check-in sign. Your words did not match anything closely, so the answer comes from the photo. Check-in Hall, Terminal 1 (Desks 101–160) is in Terminal 1, Check-in Hall (Departures, Level 1). Enter Terminal 1 at Departures level."* Hours 03:30–22:00; Strong match; From your photo, words used to narrow down | Pass |
+
+Live browser microphone capture was therefore manually verified on the
+deployed Hugging Face Space using a fresh non-blind passenger query, and a
+fresh voice-plus-image interaction was completed successfully on the deployed
+Space, confirming end-to-end multimodal orchestration through the hosted
+interface. Screenshots: `ui_deployment_live_voice.png`,
+`ui_deployment_live_voice_photo.png` (browser window cropped to the app panel).
 
 ## Observations (behavioural, not deployment defects — left unchanged)
 
@@ -104,3 +123,5 @@ Captured from the direct Space URL at 1512 × 691 (browser viewport).
 | `ui_deployment_extra_voice.png` | Test C: voice turn with "Heard as" transcript, answer and editable transcript box |
 | `ui_deployment_extra_multimodal_technical.png` | Test D technical details: intent score, entities, retrieval stage, CLIP top categories and margin |
 | `ui_deployment_extra_uncertainty_technical.png` | Test E technical details: `no_retrieval`, entities and flags |
+| `ui_deployment_live_voice.png` | Test F: live-microphone voice turn, transcript, first-aid answer |
+| `ui_deployment_live_voice_photo.png` | Test G: live-microphone voice + check-in pictogram, image-led answer narrowed by the spoken terminal |
