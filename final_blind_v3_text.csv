@@ -1,0 +1,21 @@
+blind_id,query,expected_decision,expected_category,expected_record_id,reason
+T3_B001,where is gate A7,answer,gate,gates_pier_a,"A7 falls inside the A1-A12 range of gates_pier_a, the only record covering Pier A gates."
+T3_B002,"im checking in at desk 214, wheres security after that",answer,security,security_t2,"Desk 214 lies in the 201-230 range of checkin_t2, and security_t2 is the single Terminal 2 checkpoint, so the desk number decides the terminal."
+T3_B003,Is there a lounge in Terminal 2 or do I have to wait at the gate?,answer,lounge,lounge_aurora,lounge_aurora is the only lounge record and its availability_note states Terminal 2 has no lounge and cannot reach it after T2 security (spec section 3).
+T3_B004,What time does the last train into Nordhaven leave from the airport?,answer,transport,rail_station,rail_station opening_hours give the first-to-last train window 04:30-00:45 for the airport station.
+T3_B005,"I think I left my jacket on the plane and I have already come through into the arrivals hall, who do I need to speak to about that?",answer,lost_property,lost_property_t1,"lost_property_t1 is the single office for items lost anywhere at the airport or left on board, serving both terminals."
+T3_B006,"my bag is coming out on belt 8, which terminal is that in?",answer,baggage,baggage_reclaim_t2,"Belt 8 lies in the 7-9 range of baggage_reclaim_t2, which fixes the terminal without further information."
+T3_B007,"I am arriving by train and I use a wheelchair, where do I ask for help when I get off?",answer,accessibility,prm_point_rail,"prm_point_rail is the designated assistance point at the rail station entrance (spec section 5, point 4)."
+T3_B008,how do i get from terminal 1 to terminal 2,answer,transport,shuttle_t1_t2,"shuttle_t1_t2 is the only record for transfer between the terminals, with stop 9 and a 10-minute frequency."
+T3_B009,Is there an accessible toilet on the arrivals level of Terminal 2?,answer,restroom,restrooms_t2,restrooms_t2 answers it directly: its accessibility notes say the Terminal 2 arrivals level has none and point to the departures level.
+T3_B010,"my father feels faint, we are still landside in Terminal 1, is there a nurse anywhere?",answer,medical,first_aid_t1,"first_aid_t1 is the only medical record, landside beside Security North on the Terminal 1 departures level, serving both terminals."
+T3_B011,Can I still get a hot meal at the Skyline at quarter past nine in the evening?,answer,restaurant,restaurant_skyline,"restaurant_skyline is named in the request and its availability_note (hot kitchen closes 21:00, venue open to 21:30) settles the time question."
+T3_B012,wheres the toilet,clarify,restroom,,"Three restroom records exist (restrooms_t1_arrivals, restrooms_t1_departures, restrooms_t2) and nothing in the request indicates terminal or level."
+T3_B013,where do I check in?,clarify,check_in,,"checkin_t1 and checkin_t2 both match and neither the airline, terminal nor desk number is given."
+T3_B014,Where is the security checkpoint please,clarify,security,,"security_t1_north, security_t1_south and security_t2 all match and the request contains nothing that chooses between them."
+T3_B015,"I have got about two hours before boarding and I am starving, where can I get something to eat?",clarify,restaurant,,"restaurant_skyline, cafe_harbour and cafe_pier_c all match; the request gives no terminal and no landside or airside cue."
+T3_B016,Is flight NV412 to Bergen running late?,redirect,information,,flight_information states the assistant holds no live flight data and delays must come from the boards or the airline (spec section 5).
+T3_B017,which gate does the 14:05 to Amsterdam go from?,redirect,gate,,"Gate allocation per flight is shown on departure boards only (availability_note on the gate records and flight_information), so it is never answered from the KB."
+T3_B018,how do i get to gate D4?,abstain,,,"Piers are A, B and C only (spec section 1), so D4 is well-formed but non-existent and no record covers it."
+T3_B019,is there a pharmacy airside where I can buy paracetamol?,abstain,,,The specification deliberately excludes a pharmacy (section 6) and the KB holds no such record.
+T3_B020,do I need a visa to transit through here?,abstain,,,Immigration rules are not airport facility information; neither the specification nor the KB covers them.

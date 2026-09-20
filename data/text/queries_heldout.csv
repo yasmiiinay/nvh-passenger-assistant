@@ -1,0 +1,37 @@
+query_id,query,intent,entities_json,target_kb_id,query_type,expected_behaviour,split,notes
+h001,Gate A11 please,find_gate,"{""gate_id"": ""A11""}",gates_pier_a,precise,answer,heldout,bare identifier with a courtesy word
+h002,Is C12 a real gate here?,find_gate,"{""gate_id"": ""C12""}",,ambiguous,abstain,heldout,well-formed identifier outside C1-C10
+h003,Which pier are the C gates in?,find_gate,{},gates_pier_c,precise,answer,heldout,alias phrase for a gate area
+h004,I have desk 225 on my ticket which terminal is that?,find_check_in,"{""desk_id"": ""DESK 225""}",checkin_t2,precise,answer,heldout,desk identifier from the second terminal range
+h005,Where do I drop off hold luggage in T1?,find_check_in,"{""terminal"": ""Terminal 1""}",checkin_t1,paraphrase,answer,heldout,check-in phrased as luggage drop; terminal short form
+h006,Is there a second security checkpoint in terminal 1?,find_security,"{""terminal"": ""Terminal 1""}",,ambiguous,clarify,heldout,two checkpoints in T1; which one is meant
+h007,The screening line at the south checkpoint is huge is there an alternative?,find_security,{},security_t1_south,ambiguous,answer,heldout,queue complaint; live queue length must not be invented; related checkpoint may be offered
+h008,Which belts serve terminal 2 arrivals?,find_baggage_reclaim,"{""terminal"": ""Terminal 2""}",baggage_reclaim_t2,precise,answer,heldout,terminal resolves the reclaim hall
+h009,My suitcase came out damaged who do I speak to?,report_lost_item,{},,ambiguous,clarify,heldout,no damaged-baggage service exists; must not confidently answer
+h010,I think I dropped my passport in the departure hall,report_lost_item,{},lost_property_t1,paraphrase,answer,heldout,lost item without the words lost or found
+h011,Where can I ask about flight connections?,find_information,{},,vague,clarify,heldout,three information desks; no terminal
+h012,help desk in terminal 2,find_information,"{""terminal"": ""Terminal 2""}",info_desk_t2,precise,answer,heldout,alias for the T2 desk
+h013,Can I use the Aurora lounge with a terminal 2 departure?,find_lounge,"{""terminal"": ""Terminal 2"", ""service"": ""aurora""}",lounge_aurora,ambiguous,answer,heldout,lounge exists only in T1; availability note carries the answer
+h014,Somewhere to sit down for a proper meal airside?,find_restaurant,{},restaurant_skyline,paraphrase,answer,heldout,sit-down restaurant without naming it
+h015,Coffee near the arrivals exit,find_restaurant,{},cafe_harbour,paraphrase,answer,heldout,landside cafe by description
+h016,When does the Harbour Cafe close?,ask_opening_hours,"{""service"": ""harbour cafe""}",cafe_harbour,precise,answer,heldout,named outlet; closing time from hours field
+h017,Is Skyline still serving at 10pm?,ask_opening_hours,"{""service"": ""skyline"", ""time"": ""10pm""}",restaurant_skyline,ambiguous,answer,heldout,hours must be returned without claiming open or closed at a clock time
+h018,Toilets after passport control,find_restroom,{},,vague,clarify,heldout,airside toilets exist in both terminals; terminal unknown
+h019,Baby changing facilities?,none,{},,out_of_scope,abstain,heldout,no such record by design
+h020,I am travelling with my father who uses a wheelchair where do we go first in terminal 1?,request_accessibility_help,"{""terminal"": ""Terminal 1""}",prm_point_t1_entrance,paraphrase,answer,heldout,assistance request; designated point at the entrance
+h021,Is there a doctor at the airport?,request_accessibility_help,{},first_aid_t1,paraphrase,answer,heldout,medical without the words first aid
+h022,What time does the lost property office open on Saturday?,ask_opening_hours,"{""service"": ""lost property""}",lost_property_t1,precise,answer,heldout,weekend hours differ from weekday hours
+h023,Nearest cash machine?,none,{},,out_of_scope,abstain,heldout,no such record by design
+h024,How often does the shuttle to terminal 2 run?,find_transport,"{""terminal"": ""Terminal 2""}",shuttle_t1_t2,precise,answer,heldout,shuttle record is filed under Terminal 1; tests terminal narrowing on a cross-terminal service
+h025,Where is the drop off point for taxis at terminal 2?,find_transport,"{""terminal"": ""Terminal 2""}",taxi_rank_t1,ambiguous,answer,heldout,no T2 taxi rank by design; grounded no plus pointer to the T1 rank
+h026,Where do I catch the train into Nordhaven?,find_transport,{},rail_station,paraphrase,answer,heldout,rail by destination name
+h027,Is flight LH 2004 boarding yet?,ask_flight_status,"{""flight_ref"": ""LH 2004""}",flight_information,volatile,redirect,heldout,flight reference with a space
+h028,Has the gate changed for my flight?,ask_flight_status,{},flight_information,volatile,redirect,heldout,volatile without a flight reference
+h029,My flight is cancelled can you rebook me?,ask_flight_status,{},flight_information,volatile,redirect,heldout,volatile plus an action the system cannot perform
+h030,Can you print my boarding pass?,none,{},,out_of_scope,abstain,heldout,action request; the system cannot act
+h031,What does the blue sign with a person and a suitcase mean?,identify_sign,{},,deictic,clarify,heldout,sign description without a photo and without a deictic word
+h032,Wo ist die Gepaeckausgabe?,find_baggage_reclaim,{},baggage_reclaim_t1,non_english,abstain,heldout,German; expected to fail in the English-only prototype
+h033,gate 14,find_gate,{},,ambiguous,clarify,heldout,gate number without a pier letter
+h034,B7 or B17 which is closer to the lounge?,find_gate,"{""gate_id"": ""B7""}",gates_pier_b,precise,answer,heldout,two identifiers in the same pier
+h035,Is there parking at terminal 2?,find_transport,"{""terminal"": ""Terminal 2"", ""service"": ""parking""}",car_park_p1,ambiguous,answer,heldout,car park is opposite T1; answer must say so
+h036,How do I get from the rail station up to departures?,ask_directions,{},rail_station,precise,answer,heldout,directions field of the station record

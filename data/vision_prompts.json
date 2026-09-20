@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "status": "initial wording; category and anchor sentences are empirical and may be revised on the development image split only, with every revision recorded below",
+    "notes": [
+      "One prompt list per visual category (vocabulary.json categories with visual_class true).",
+      "Pictograms and photographed signs share the same prompts; they are evaluation strata, not separate prompt sets.",
+      "Out-of-scope anchors compete with the category prompts in the same similarity ranking; an image whose best match is an anchor is treated as not an airport sign.",
+      "lost_property has no visual class in the vocabulary and therefore no prompt."
+    ],
+    "revisions": []
+  },
+  "template": "{}",
+  "categories": {
+    "gate": ["an airport sign for departure gates", "a pictogram of an aeroplane taking off"],
+    "check_in": ["an airport sign for check-in desks", "a pictogram of a ticket or check-in counter"],
+    "security": ["an airport sign for security screening", "a pictogram of a security checkpoint with a scanner"],
+    "baggage": ["an airport sign for baggage reclaim", "a pictogram of a suitcase on a conveyor belt"],
+    "information": ["an airport sign for the information desk", "a pictogram of a question mark or the letter i for information"],
+    "lounge": ["an airport sign for the lounge", "a pictogram of a waiting room with a seat"],
+    "restaurant": ["an airport sign for a restaurant or cafe", "a pictogram of a fork and knife or a coffee cup"],
+    "restroom": ["an airport sign for toilets", "a pictogram of a man and a woman for restrooms"],
+    "accessibility": ["an airport sign for assistance for passengers with reduced mobility", "a pictogram of a person in a wheelchair"],
+    "transport": ["an airport sign for trains, buses, taxis or parking", "a pictogram of a bus, a train, a taxi or a car"],
+    "medical": ["an airport sign for first aid", "a pictogram of a first aid cross"]
+  },
+  "out_of_scope_anchors": [
+    "a photograph of a person",
+    "a photograph of food on a plate",
+    "a landscape or city photograph",
+    "a boarding pass or printed document",
+    "a screenshot of a phone or computer screen",
+    "a blank or blurry image"
+  ]
+}

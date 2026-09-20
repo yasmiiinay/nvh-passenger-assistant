@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "name": "controlled_vocabulary",
+    "version": "1.0",
+    "status": "frozen_after_02c",
+    "notes": [
+      "Single source of truth shared by image labels, text intents, KB categories and routing.",
+      "Renaming a category after this point breaks three datasets at once; do not do it casually.",
+      "All content is synthetic and authored for AI7016."
+    ]
+  },
+
+  "categories": {
+    "gate": {"description": "Boarding gate areas and piers", "visual_class": true},
+    "check_in": {"description": "Check-in halls and desk ranges", "visual_class": true},
+    "security": {"description": "Security screening checkpoints", "visual_class": true},
+    "baggage": {"description": "Baggage reclaim belts and baggage services", "visual_class": true},
+    "lost_property": {"description": "Lost property / lost and found office", "visual_class": false,
+      "visual_note": "No reliably standard pictogram identified; decide at image collection whether a usable public-domain symbol exists, else this category is text/voice-only (recorded as a finding, not hidden)."},
+    "information": {"description": "Information desks and flight information", "visual_class": true},
+    "lounge": {"description": "Airline/pay lounges", "visual_class": true,
+      "visual_note": "Pictogram availability to confirm at image collection (waiting-area symbol may substitute)."},
+    "restaurant": {"description": "Restaurants and cafes", "visual_class": true},
+    "restroom": {"description": "Toilets, including accessible toilets", "visual_class": true},
+    "accessibility": {"description": "PRM assistance points and accessibility services", "visual_class": true},
+    "transport": {"description": "Rail, bus, taxi, car park, inter-terminal shuttle", "visual_class": true},
+    "medical": {"description": "First aid and medical assistance", "visual_class": true}
+  },
+
+  "intents": {
+    "find_gate":               {"compatible_categories": ["gate"], "expected_entities": ["gate_id", "terminal"], "exact_match": true,  "response_type": "locate",     "volatility": "normal"},
+    "find_check_in":           {"compatible_categories": ["check_in"], "expected_entities": ["terminal", "desk_id", "airline"], "exact_match": true,  "response_type": "locate", "volatility": "normal"},
+    "find_security":           {"compatible_categories": ["security"], "expected_entities": ["terminal"], "exact_match": false, "response_type": "locate", "volatility": "normal"},
+    "find_baggage_reclaim":    {"compatible_categories": ["baggage"], "expected_entities": ["belt_id", "terminal"], "exact_match": true,  "response_type": "locate", "volatility": "normal"},
+    "report_lost_item":        {"compatible_categories": ["lost_property"], "expected_entities": ["service", "terminal"], "exact_match": false, "response_type": "locate", "volatility": "normal"},
+    "find_information":        {"compatible_categories": ["information"], "expected_entities": ["terminal"], "exact_match": false, "response_type": "locate", "volatility": "normal"},
+    "find_lounge":             {"compatible_categories": ["lounge"], "expected_entities": ["terminal"], "exact_match": false, "response_type": "locate", "volatility": "normal"},
+    "find_restaurant":         {"compatible_categories": ["restaurant"], "expected_entities": ["terminal"], "exact_match": false, "response_type": "locate", "volatility": "normal"},
+    "find_restroom":           {"compatible_categories": ["restroom"], "expected_entities": ["terminal"], "exact_match": false, "response_type": "locate", "volatility": "normal"},
+    "find_transport":          {"compatible_categories": ["transport"], "expected_entities": ["service", "terminal"], "exact_match": true, "response_type": "locate", "volatility": "normal"},
+    "request_accessibility_help": {"compatible_categories": ["accessibility", "restroom", "medical"], "expected_entities": ["terminal", "service"], "exact_match": false, "response_type": "assist", "volatility": "normal",
+      "note": "Assistance requests err toward answering with designated points plus contact rather than interrogating the user (airport_spec.md section 5)."},
+    "ask_opening_hours":       {"compatible_categories": ["check_in", "lost_property", "information", "lounge", "restaurant", "transport", "medical"], "expected_entities": ["service", "terminal", "time"], "exact_match": false, "response_type": "hours", "volatility": "normal",
+      "note": "Requires a resolved target record; if the service is ambiguous, clarify before answering."},
+    "ask_directions":          {"compatible_categories": ["gate", "check_in", "security", "baggage", "lost_property", "information", "lounge", "restaurant", "restroom", "accessibility", "transport", "medical"], "expected_entities": ["service", "gate_id", "terminal"], "exact_match": true, "response_type": "directions", "volatility": "normal"},
+    "ask_flight_status":       {"compatible_categories": ["information"], "expected_entities": ["flight_ref", "gate_id", "time"], "exact_match": false, "response_type": "redirect", "volatility": "volatile",
+      "note": "NEVER answered from the KB. Routed to the flight_information record's official-source redirect. A query that mentions a gate in the context of a specific flight belongs here, not in find_gate."},
+    "identify_sign":           {"compatible_categories": ["gate", "check_in", "security", "baggage", "information", "lounge", "restaurant", "restroom", "accessibility", "transport", "medical"], "expected_entities": ["deictic_ref"], "exact_match": false, "response_type": "describe", "volatility": "normal",
+      "note": "Deictic; image evidence leads. Text-only occurrences trigger a clarify asking for the photo."}
+  },
+
+  "entities": {
+    "gate_id":   {"kind": "identifier", "pattern": "^[ABC][0-9]{1,2}$", "note": "Well-formed does not mean existing; existence is checked against KB identifier lists."},
+    "belt_id":   {"kind": "identifier", "pattern": "^BELT [0-9]{1,2}$", "canonical_example": "BELT 3"},
+    "desk_id":   {"kind": "identifier", "pattern": "^DESK [0-9]{3}$", "canonical_example": "DESK 120"},
+    "terminal":  {"kind": "closed_set", "values": ["Terminal 1", "Terminal 2"]},
+    "service":   {"kind": "gazetteer", "source": "KB name + aliases fields (built at load time; no separate list to drift)"},
+    "airline":   {"kind": "gazetteer", "source": "empty in v1 by design (airport_spec.md section 6)"},
+    "time":      {"kind": "open", "note": "Times/relative time refs ('now', 'tonight'); extracted but the system has no live clock reasoning in MVP — stated as a limitation."},
+    "flight_ref": {"kind": "pattern", "pattern": "^[A-Z]{2} ?[0-9]{2,4}$", "note": "Detected only to trigger the volatile redirect; never resolved."},
+    "deictic_ref": {"kind": "closed_set", "values": ["this", "here", "this sign", "that"]}
+  },
+
+  "decision_outcomes": ["answer", "clarify", "abstain", "redirect"],
+  "volatility_values": ["low", "medium", "high"],
+  "query_types": ["precise", "paraphrase", "vague", "deictic", "ambiguous", "out_of_scope", "volatile", "conflict_text_side", "non_english"],
+  "splits": ["dev", "heldout"],
+
+  "query_interpretation": {
+    "_note": "Added in usability hardening 04.6 (after both blind evaluations). Small, airport-specific word lists read by src/entities.py; they constrain retrieval and never add facts. Each list is a documented failure class, not a lookup table of diagnostic sentences.",
+    "location_prepositions": ["near", "beside", "next to", "by", "opposite", "at", "from", "close to", "around", "outside", "in front of", "behind", "after", "before", "past", "through", "beyond"],
+    "zone_phrases": {
+      "airside": ["airside", "after security", "past security", "passed security", "through security", "beyond security", "once through security", "at the gates", "gate area"],
+      "landside": ["landside", "before security", "not through security", "not yet through security"],
+      "arrivals": ["arrivals", "arrival hall", "arrivals hall", "just landed", "have landed", "landed", "arriving", "just arrived", "have arrived", "arrived", "on arrival"],
+      "departures": ["departures", "departure hall", "departures hall", "departing", "flying out", "before my flight", "about to fly"]
+    },
+    "service_families": {
+      "accessibility": ["special assistance", "wheelchair", "wheelchairs", "reduced mobility", "mobility assistance", "mobility help", "prm", "assistance point", "disabled", "disability", "cannot walk far", "can not walk far", "walking difficulty", "step free", "step-free"],
+      "medical": ["sick", "ill", "unwell", "injured", "injury", "hurt", "medical", "first aid", "nurse", "doctor", "medic", "medicine", "faint", "fainted", "bleeding"]
+    },
+    "service_synonyms": {
+      "_note": "Single-service nouns that name exactly one KB record but are not among its aliases; treated like aliases (the KB itself is frozen). Keep tiny.",
+      "rail_station": ["train", "trains", "railway", "the train", "a train", "rail station", "the station"],
+      "taxi_rank_t1": ["taxi", "cab", "a taxi", "a cab"],
+      "lost_property_t1": ["lost my", "i lost", "i have lost", "misplaced", "lost something", "lost an item", "lost items"]
+    },
+    "transfer_phrases": ["between terminals", "between the terminals", "change terminal", "change terminals", "terminal transfer", "transfer terminal", "other terminal", "the other terminal", "switch terminal", "switch terminals", "connect to terminal"],
+    "unsupported_services": ["locker", "lockers", "luggage storage", "baggage storage", "left luggage storage", "atm", "cash machine", "cashpoint", "currency exchange", "bureau de change", "exchange money", "pharmacy", "chemist", "smoking area", "smoking room", "smoke", "prayer room", "chapel", "mosque", "duty free", "shops", "shopping", "souvenir", "electronics", "phone charger", "charging point", "charging station", "hotel", "hotels", "shower", "showers", "car rental", "car hire", "rent a car", "post office", "playground", "play area", "kids area", "wifi", "wi fi", "police", "customs", "immigration", "passport control", "visa", "luggage wrapping", "bag wrapping", "trolley", "trolleys", "pet", "pets", "vending machine"],
+    "fragment_lead_ins": ["what about", "how about", "and", "also", "same for", "same in", "what of", "and for", "or", "the other", "other one", "instead", "then", "ok", "okay", "please", "thanks", "thank you"]
+  }
+}

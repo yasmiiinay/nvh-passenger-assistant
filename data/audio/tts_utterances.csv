@@ -1,0 +1,25 @@
+query_id,text,notes
+q001,Where is gate B12?,identifier; the core RQ2 token
+q002,How do I get to A7,identifier without punctuation
+q003,gate c3?,short identifier utterance
+q006,Check-in desks Terminal 2,terminal form
+q007,Where is desk 145?,three-digit desk number
+q011,Baggage claim terminal 1,alias plus terminal
+q012,Where is belt 8?,belt identifier
+q014,lost and found,bare alias
+q019,Is there a lounge in Terminal 2?,grounded negative
+q023,Is the lounge open right now?,time reference
+q025,accessible toilet terminal 2,alias with terminal
+q027,wheelchair help terminal 2,assistance request
+q030,Where is the train station?,plain service
+q033,I parked in P1 - how do I get back there?,car park identifier
+q034,How do I get from Terminal 1 to Terminal 2?,two terminals
+q035,Is my flight NH123 delayed?,flight reference
+q036,What gate is flight XY456 leaving from?,gate word inside a volatile query
+q037,when does boarding start,volatile without reference
+q041,Where is gate B21?,non-existent identifier
+q043,Kayip esya ofisi nerede?,documented non-English case read by an English voice
+h001,Gate A11 please,held-out identifier
+h004,I have desk 225 on my ticket which terminal is that?,held-out desk number
+h008,Which belts serve terminal 2 arrivals?,held-out terminal form
+h027,Is flight LH 2004 boarding yet?,held-out flight reference with a space

@@ -1,0 +1,44 @@
+query_id,query,intent,entities_json,target_kb_id,query_type,expected_behaviour,split,notes
+q001,Where is gate B12?,find_gate,"{""gate_id"": ""B12""}",gates_pier_b,precise,answer,dev,canonical exact-identifier case
+q002,How do I get to A7,find_gate,"{""gate_id"": ""A7""}",gates_pier_a,precise,answer,dev,no punctuation; directions phrasing
+q003,gate c3?,find_gate,"{""gate_id"": ""C3""}",gates_pier_c,precise,answer,dev,lowercase identifier must be canonicalised
+q004,Where do I board my flight?,find_gate,{},,vague,clarify,dev,gate unknown; three gate areas tie -> ask for gate number
+q005,Where can I check in?,find_check_in,{},,vague,clarify,dev,terminal unknown; two check-in records
+q006,Check-in desks Terminal 2,find_check_in,"{""terminal"": ""Terminal 2""}",checkin_t2,precise,answer,dev,terminal entity resolves the record
+q007,Where is desk 145?,find_check_in,"{""desk_id"": ""DESK 145""}",checkin_t1,precise,answer,dev,desk range expansion 101-160
+q008,Where is security?,find_security,{},,vague,clarify,dev,three checkpoints; margin should be small
+q009,How long is the queue at security north?,find_security,{},security_t1_north,ambiguous,answer,dev,DIFFICULT: location answerable; live queue time must be declared unavailable not invented. Annotation corrected 12 Sep 2026: entities_json held the target terminal rather than a surface entity
+q010,Where do I pick up my suitcase?,find_baggage_reclaim,{},,paraphrase,clarify,dev,no terminal; two reclaim halls
+q011,Baggage claim terminal 1,find_baggage_reclaim,"{""terminal"": ""Terminal 1""}",baggage_reclaim_t1,precise,answer,dev,alias + terminal
+q012,Where is belt 8?,find_baggage_reclaim,"{""belt_id"": ""BELT 8""}",baggage_reclaim_t2,precise,answer,dev,belt identifier selects T2 without the word terminal
+q013,I left my bag on the plane,report_lost_item,{},lost_property_t1,paraphrase,answer,dev,DIFFICULT: semantically close to baggage reclaim; must hit lost property
+q014,lost and found,report_lost_item,{},lost_property_t1,precise,answer,dev,bare alias
+q015,My bag never arrived on the belt - where do I complain?,report_lost_item,{},lost_property_t1,ambiguous,answer,dev,DIFFICULT: baggage vocabulary but lost-property target
+q016,Where can I get help?,find_information,{},,vague,clarify,dev,three information desks
+q017,information desk arrivals,find_information,{},info_desk_t1_arrivals,precise,answer,dev,zone word disambiguates
+q018,Is there a lounge?,find_lounge,{},lounge_aurora,vague,answer,dev,single lounge -> vague still resolves
+q019,Is there a lounge in Terminal 2?,find_lounge,"{""terminal"": ""Terminal 2""}",lounge_aurora,ambiguous,answer,dev,DIFFICULT: correct answer is a grounded no plus pointer to T1 lounge
+q020,What time does the lounge open?,ask_opening_hours,"{""service"": ""lounge""}",lounge_aurora,precise,answer,dev,hours response type
+q021,Where can I eat something before my flight?,find_restaurant,{},,vague,clarify,dev,three outlets; airside/landside unknown
+q022,Skyline restaurant opening hours,ask_opening_hours,"{""service"": ""skyline""}",restaurant_skyline,precise,answer,dev,named service
+q023,Is the lounge open right now?,ask_opening_hours,"{""service"": ""lounge"", ""time"": ""now""}",lounge_aurora,ambiguous,answer,dev,DIFFICULT: return hours; MVP has no clock reasoning - must not claim open/closed
+q024,Where is the nearest toilet?,find_restroom,{},,vague,clarify,dev,"""nearest"" needs location context the system lacks"
+q025,accessible toilet terminal 2,find_restroom,"{""terminal"": ""Terminal 2""}",restrooms_t2,precise,answer,dev,accessibility field carries the answer
+q026,I need wheelchair assistance,request_accessibility_help,{},prm_point_t1_entrance,vague,answer,dev,assistance errs toward answering with designated points + contact (spec section 5)
+q027,wheelchair help terminal 2,request_accessibility_help,"{""terminal"": ""Terminal 2""}",prm_point_t2,precise,answer,dev,
+q028,Where is first aid?,request_accessibility_help,{},first_aid_t1,precise,answer,dev,medical category via assistance intent
+q029,How do I get to the city centre?,find_transport,{},,vague,clarify,dev,rail vs bus vs taxi
+q030,Where is the train station?,find_transport,"{""service"": ""train station""}",rail_station,precise,answer,dev,
+q031,taxi?,find_transport,"{""service"": ""taxi""}",taxi_rank_t1,vague,answer,dev,single-word query; only one taxi record
+q032,Where does the airport bus leave from?,find_transport,"{""service"": ""bus""}",bus_terminal,paraphrase,answer,dev,
+q033,I parked in P1 - how do I get back there?,ask_directions,"{""service"": ""P1""}",car_park_p1,precise,answer,dev,P1 identifier
+q034,How do I get from Terminal 1 to Terminal 2?,ask_directions,"{""terminal"": ""Terminal 2""}",shuttle_t1_t2,paraphrase,answer,dev,
+q035,Is my flight NH123 delayed?,ask_flight_status,"{""flight_ref"": ""NH 123""}",flight_information,volatile,redirect,dev,volatile: never answered from KB
+q036,What gate is flight XY456 leaving from?,ask_flight_status,"{""flight_ref"": ""XY 456""}",flight_information,volatile,redirect,dev,DIFFICULT trap: mentions gate but is flight-specific -> redirect not find_gate
+q037,when does boarding start,ask_flight_status,{},flight_information,volatile,redirect,dev,volatile without flight ref
+q038,Where can I smoke?,none,{},,out_of_scope,abstain,dev,no smoking record exists by design; abstain + info desk
+q039,Can you book me a taxi for 6pm?,none,"{""time"": ""6pm""}",,out_of_scope,abstain,dev,action request; abstain on booking; taxi rank info may be offered
+q040,What is the wifi password?,none,{},,out_of_scope,abstain,dev,no such record; abstain + info desk
+q041,Where is gate B21?,find_gate,"{""gate_id"": ""B21""}",,ambiguous,abstain,dev,DIFFICULT: well-formed identifier outside B1-B18; must say no such gate; text side of the conflict scenario
+q042,What does this sign mean?,identify_sign,"{""deictic_ref"": ""this sign""}",,deictic,clarify,dev,text-only deictic -> ask for the photo
+q043,Kayip esya ofisi nerede?,report_lost_item,{},lost_property_t1,non_english,abstain,dev,documented non-English failure case (Turkish); expected to fail in English-only MVP and be reported as such

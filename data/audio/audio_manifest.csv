@@ -1,0 +1,126 @@
+audio_id,query_id,speaker_id,reference_transcript,environment,noise_condition,expected_identifiers,target_kb_id,split,file
+aud_001,q001,tts_daniel,Where is gate B12?,quiet,clean,B12,gates_pier_b,dev,files/aud_001.wav
+aud_002,q002,tts_daniel,How do I get to A7,quiet,clean,A7,gates_pier_a,dev,files/aud_002.wav
+aud_003,q003,tts_daniel,gate c3?,quiet,clean,C3,gates_pier_c,dev,files/aud_003.wav
+aud_004,q006,tts_daniel,Check-in desks Terminal 2,quiet,clean,,checkin_t2,dev,files/aud_004.wav
+aud_005,q007,tts_daniel,Where is desk 145?,quiet,clean,DESK 145,checkin_t1,dev,files/aud_005.wav
+aud_006,q011,tts_daniel,Baggage claim terminal 1,quiet,clean,,baggage_reclaim_t1,dev,files/aud_006.wav
+aud_007,q012,tts_daniel,Where is belt 8?,quiet,clean,BELT 8,baggage_reclaim_t2,dev,files/aud_007.wav
+aud_008,q014,tts_daniel,lost and found,quiet,clean,,lost_property_t1,dev,files/aud_008.wav
+aud_009,q019,tts_daniel,Is there a lounge in Terminal 2?,quiet,clean,,lounge_aurora,dev,files/aud_009.wav
+aud_010,q023,tts_daniel,Is the lounge open right now?,quiet,clean,,lounge_aurora,dev,files/aud_010.wav
+aud_011,q025,tts_daniel,accessible toilet terminal 2,quiet,clean,,restrooms_t2,dev,files/aud_011.wav
+aud_012,q027,tts_daniel,wheelchair help terminal 2,quiet,clean,,prm_point_t2,dev,files/aud_012.wav
+aud_013,q030,tts_daniel,Where is the train station?,quiet,clean,,rail_station,dev,files/aud_013.wav
+aud_014,q033,tts_daniel,I parked in P1 - how do I get back there?,quiet,clean,,car_park_p1,dev,files/aud_014.wav
+aud_015,q034,tts_daniel,How do I get from Terminal 1 to Terminal 2?,quiet,clean,,shuttle_t1_t2,dev,files/aud_015.wav
+aud_016,q035,tts_daniel,Is my flight NH123 delayed?,quiet,clean,,flight_information,dev,files/aud_016.wav
+aud_017,q036,tts_daniel,What gate is flight XY456 leaving from?,quiet,clean,,flight_information,dev,files/aud_017.wav
+aud_018,q037,tts_daniel,when does boarding start,quiet,clean,,flight_information,dev,files/aud_018.wav
+aud_019,q041,tts_daniel,Where is gate B21?,quiet,clean,B21,,dev,files/aud_019.wav
+aud_020,q043,tts_daniel,Kayip esya ofisi nerede?,quiet,clean,,lost_property_t1,dev,files/aud_020.wav
+aud_021,h001,tts_daniel,Gate A11 please,quiet,clean,A11,gates_pier_a,heldout,files/aud_021.wav
+aud_022,h004,tts_daniel,I have desk 225 on my ticket which terminal is that?,quiet,clean,DESK 225,checkin_t2,heldout,files/aud_022.wav
+aud_023,h008,tts_daniel,Which belts serve terminal 2 arrivals?,quiet,clean,,baggage_reclaim_t2,heldout,files/aud_023.wav
+aud_024,h027,tts_daniel,Is flight LH 2004 boarding yet?,quiet,clean,,flight_information,heldout,files/aud_024.wav
+aud_025,q001,tts_samantha,Where is gate B12?,quiet,clean,B12,gates_pier_b,dev,files/aud_025.wav
+aud_026,q002,tts_samantha,How do I get to A7,quiet,clean,A7,gates_pier_a,dev,files/aud_026.wav
+aud_027,q003,tts_samantha,gate c3?,quiet,clean,C3,gates_pier_c,dev,files/aud_027.wav
+aud_028,q006,tts_samantha,Check-in desks Terminal 2,quiet,clean,,checkin_t2,dev,files/aud_028.wav
+aud_029,q007,tts_samantha,Where is desk 145?,quiet,clean,DESK 145,checkin_t1,dev,files/aud_029.wav
+aud_030,q011,tts_samantha,Baggage claim terminal 1,quiet,clean,,baggage_reclaim_t1,dev,files/aud_030.wav
+aud_031,q012,tts_samantha,Where is belt 8?,quiet,clean,BELT 8,baggage_reclaim_t2,dev,files/aud_031.wav
+aud_032,q014,tts_samantha,lost and found,quiet,clean,,lost_property_t1,dev,files/aud_032.wav
+aud_033,q019,tts_samantha,Is there a lounge in Terminal 2?,quiet,clean,,lounge_aurora,dev,files/aud_033.wav
+aud_034,q023,tts_samantha,Is the lounge open right now?,quiet,clean,,lounge_aurora,dev,files/aud_034.wav
+aud_035,q025,tts_samantha,accessible toilet terminal 2,quiet,clean,,restrooms_t2,dev,files/aud_035.wav
+aud_036,q027,tts_samantha,wheelchair help terminal 2,quiet,clean,,prm_point_t2,dev,files/aud_036.wav
+aud_037,q030,tts_samantha,Where is the train station?,quiet,clean,,rail_station,dev,files/aud_037.wav
+aud_038,q033,tts_samantha,I parked in P1 - how do I get back there?,quiet,clean,,car_park_p1,dev,files/aud_038.wav
+aud_039,q034,tts_samantha,How do I get from Terminal 1 to Terminal 2?,quiet,clean,,shuttle_t1_t2,dev,files/aud_039.wav
+aud_040,q035,tts_samantha,Is my flight NH123 delayed?,quiet,clean,,flight_information,dev,files/aud_040.wav
+aud_041,q036,tts_samantha,What gate is flight XY456 leaving from?,quiet,clean,,flight_information,dev,files/aud_041.wav
+aud_042,q037,tts_samantha,when does boarding start,quiet,clean,,flight_information,dev,files/aud_042.wav
+aud_043,q041,tts_samantha,Where is gate B21?,quiet,clean,B21,,dev,files/aud_043.wav
+aud_044,q043,tts_samantha,Kayip esya ofisi nerede?,quiet,clean,,lost_property_t1,dev,files/aud_044.wav
+aud_045,h001,tts_samantha,Gate A11 please,quiet,clean,A11,gates_pier_a,heldout,files/aud_045.wav
+aud_046,h004,tts_samantha,I have desk 225 on my ticket which terminal is that?,quiet,clean,DESK 225,checkin_t2,heldout,files/aud_046.wav
+aud_047,h008,tts_samantha,Which belts serve terminal 2 arrivals?,quiet,clean,,baggage_reclaim_t2,heldout,files/aud_047.wav
+aud_048,h027,tts_samantha,Is flight LH 2004 boarding yet?,quiet,clean,,flight_information,heldout,files/aud_048.wav
+aud_049,q001,tts_karen,Where is gate B12?,quiet,clean,B12,gates_pier_b,dev,files/aud_049.wav
+aud_050,q002,tts_karen,How do I get to A7,quiet,clean,A7,gates_pier_a,dev,files/aud_050.wav
+aud_051,q003,tts_karen,gate c3?,quiet,clean,C3,gates_pier_c,dev,files/aud_051.wav
+aud_052,q006,tts_karen,Check-in desks Terminal 2,quiet,clean,,checkin_t2,dev,files/aud_052.wav
+aud_053,q007,tts_karen,Where is desk 145?,quiet,clean,DESK 145,checkin_t1,dev,files/aud_053.wav
+aud_054,q011,tts_karen,Baggage claim terminal 1,quiet,clean,,baggage_reclaim_t1,dev,files/aud_054.wav
+aud_055,q012,tts_karen,Where is belt 8?,quiet,clean,BELT 8,baggage_reclaim_t2,dev,files/aud_055.wav
+aud_056,q014,tts_karen,lost and found,quiet,clean,,lost_property_t1,dev,files/aud_056.wav
+aud_057,q019,tts_karen,Is there a lounge in Terminal 2?,quiet,clean,,lounge_aurora,dev,files/aud_057.wav
+aud_058,q023,tts_karen,Is the lounge open right now?,quiet,clean,,lounge_aurora,dev,files/aud_058.wav
+aud_059,q025,tts_karen,accessible toilet terminal 2,quiet,clean,,restrooms_t2,dev,files/aud_059.wav
+aud_060,q027,tts_karen,wheelchair help terminal 2,quiet,clean,,prm_point_t2,dev,files/aud_060.wav
+aud_061,q030,tts_karen,Where is the train station?,quiet,clean,,rail_station,dev,files/aud_061.wav
+aud_062,q033,tts_karen,I parked in P1 - how do I get back there?,quiet,clean,,car_park_p1,dev,files/aud_062.wav
+aud_063,q034,tts_karen,How do I get from Terminal 1 to Terminal 2?,quiet,clean,,shuttle_t1_t2,dev,files/aud_063.wav
+aud_064,q035,tts_karen,Is my flight NH123 delayed?,quiet,clean,,flight_information,dev,files/aud_064.wav
+aud_065,q036,tts_karen,What gate is flight XY456 leaving from?,quiet,clean,,flight_information,dev,files/aud_065.wav
+aud_066,q037,tts_karen,when does boarding start,quiet,clean,,flight_information,dev,files/aud_066.wav
+aud_067,q041,tts_karen,Where is gate B21?,quiet,clean,B21,,dev,files/aud_067.wav
+aud_068,q043,tts_karen,Kayip esya ofisi nerede?,quiet,clean,,lost_property_t1,dev,files/aud_068.wav
+aud_069,h001,tts_karen,Gate A11 please,quiet,clean,A11,gates_pier_a,heldout,files/aud_069.wav
+aud_070,h004,tts_karen,I have desk 225 on my ticket which terminal is that?,quiet,clean,DESK 225,checkin_t2,heldout,files/aud_070.wav
+aud_071,h008,tts_karen,Which belts serve terminal 2 arrivals?,quiet,clean,,baggage_reclaim_t2,heldout,files/aud_071.wav
+aud_072,h027,tts_karen,Is flight LH 2004 boarding yet?,quiet,clean,,flight_information,heldout,files/aud_072.wav
+aud_073,q001,tts_moira,Where is gate B12?,quiet,clean,B12,gates_pier_b,dev,files/aud_073.wav
+aud_074,q002,tts_moira,How do I get to A7,quiet,clean,A7,gates_pier_a,dev,files/aud_074.wav
+aud_075,q003,tts_moira,gate c3?,quiet,clean,C3,gates_pier_c,dev,files/aud_075.wav
+aud_076,q006,tts_moira,Check-in desks Terminal 2,quiet,clean,,checkin_t2,dev,files/aud_076.wav
+aud_077,q007,tts_moira,Where is desk 145?,quiet,clean,DESK 145,checkin_t1,dev,files/aud_077.wav
+aud_078,q011,tts_moira,Baggage claim terminal 1,quiet,clean,,baggage_reclaim_t1,dev,files/aud_078.wav
+aud_079,q012,tts_moira,Where is belt 8?,quiet,clean,BELT 8,baggage_reclaim_t2,dev,files/aud_079.wav
+aud_080,q014,tts_moira,lost and found,quiet,clean,,lost_property_t1,dev,files/aud_080.wav
+aud_081,q019,tts_moira,Is there a lounge in Terminal 2?,quiet,clean,,lounge_aurora,dev,files/aud_081.wav
+aud_082,q023,tts_moira,Is the lounge open right now?,quiet,clean,,lounge_aurora,dev,files/aud_082.wav
+aud_083,q025,tts_moira,accessible toilet terminal 2,quiet,clean,,restrooms_t2,dev,files/aud_083.wav
+aud_084,q027,tts_moira,wheelchair help terminal 2,quiet,clean,,prm_point_t2,dev,files/aud_084.wav
+aud_085,q030,tts_moira,Where is the train station?,quiet,clean,,rail_station,dev,files/aud_085.wav
+aud_086,q033,tts_moira,I parked in P1 - how do I get back there?,quiet,clean,,car_park_p1,dev,files/aud_086.wav
+aud_087,q034,tts_moira,How do I get from Terminal 1 to Terminal 2?,quiet,clean,,shuttle_t1_t2,dev,files/aud_087.wav
+aud_088,q035,tts_moira,Is my flight NH123 delayed?,quiet,clean,,flight_information,dev,files/aud_088.wav
+aud_089,q036,tts_moira,What gate is flight XY456 leaving from?,quiet,clean,,flight_information,dev,files/aud_089.wav
+aud_090,q037,tts_moira,when does boarding start,quiet,clean,,flight_information,dev,files/aud_090.wav
+aud_091,q041,tts_moira,Where is gate B21?,quiet,clean,B21,,dev,files/aud_091.wav
+aud_092,q043,tts_moira,Kayip esya ofisi nerede?,quiet,clean,,lost_property_t1,dev,files/aud_092.wav
+aud_093,h001,tts_moira,Gate A11 please,quiet,clean,A11,gates_pier_a,heldout,files/aud_093.wav
+aud_094,h004,tts_moira,I have desk 225 on my ticket which terminal is that?,quiet,clean,DESK 225,checkin_t2,heldout,files/aud_094.wav
+aud_095,h008,tts_moira,Which belts serve terminal 2 arrivals?,quiet,clean,,baggage_reclaim_t2,heldout,files/aud_095.wav
+aud_096,h027,tts_moira,Is flight LH 2004 boarding yet?,quiet,clean,,flight_information,heldout,files/aud_096.wav
+aud_097,q001,tts_rishi,Where is gate B12?,quiet,clean,B12,gates_pier_b,dev,files/aud_097.wav
+aud_098,q002,tts_rishi,How do I get to A7,quiet,clean,A7,gates_pier_a,dev,files/aud_098.wav
+aud_099,q003,tts_rishi,gate c3?,quiet,clean,C3,gates_pier_c,dev,files/aud_099.wav
+aud_100,q006,tts_rishi,Check-in desks Terminal 2,quiet,clean,,checkin_t2,dev,files/aud_100.wav
+aud_101,q007,tts_rishi,Where is desk 145?,quiet,clean,DESK 145,checkin_t1,dev,files/aud_101.wav
+aud_102,q011,tts_rishi,Baggage claim terminal 1,quiet,clean,,baggage_reclaim_t1,dev,files/aud_102.wav
+aud_103,q012,tts_rishi,Where is belt 8?,quiet,clean,BELT 8,baggage_reclaim_t2,dev,files/aud_103.wav
+aud_104,q014,tts_rishi,lost and found,quiet,clean,,lost_property_t1,dev,files/aud_104.wav
+aud_105,q019,tts_rishi,Is there a lounge in Terminal 2?,quiet,clean,,lounge_aurora,dev,files/aud_105.wav
+aud_106,q023,tts_rishi,Is the lounge open right now?,quiet,clean,,lounge_aurora,dev,files/aud_106.wav
+aud_107,q025,tts_rishi,accessible toilet terminal 2,quiet,clean,,restrooms_t2,dev,files/aud_107.wav
+aud_108,q027,tts_rishi,wheelchair help terminal 2,quiet,clean,,prm_point_t2,dev,files/aud_108.wav
+aud_109,q030,tts_rishi,Where is the train station?,quiet,clean,,rail_station,dev,files/aud_109.wav
+aud_110,q033,tts_rishi,I parked in P1 - how do I get back there?,quiet,clean,,car_park_p1,dev,files/aud_110.wav
+aud_111,q034,tts_rishi,How do I get from Terminal 1 to Terminal 2?,quiet,clean,,shuttle_t1_t2,dev,files/aud_111.wav
+aud_112,q035,tts_rishi,Is my flight NH123 delayed?,quiet,clean,,flight_information,dev,files/aud_112.wav
+aud_113,q036,tts_rishi,What gate is flight XY456 leaving from?,quiet,clean,,flight_information,dev,files/aud_113.wav
+aud_114,q037,tts_rishi,when does boarding start,quiet,clean,,flight_information,dev,files/aud_114.wav
+aud_115,q041,tts_rishi,Where is gate B21?,quiet,clean,B21,,dev,files/aud_115.wav
+aud_116,q043,tts_rishi,Kayip esya ofisi nerede?,quiet,clean,,lost_property_t1,dev,files/aud_116.wav
+aud_117,h001,tts_rishi,Gate A11 please,quiet,clean,A11,gates_pier_a,heldout,files/aud_117.wav
+aud_118,h004,tts_rishi,I have desk 225 on my ticket which terminal is that?,quiet,clean,DESK 225,checkin_t2,heldout,files/aud_118.wav
+aud_119,h008,tts_rishi,Which belts serve terminal 2 arrivals?,quiet,clean,,baggage_reclaim_t2,heldout,files/aud_119.wav
+aud_120,h027,tts_rishi,Is flight LH 2004 boarding yet?,quiet,clean,,flight_information,heldout,files/aud_120.wav
+aud_121,s001,spk_01,Where is belt 9?,quiet,clean,BELT 9,baggage_reclaim_t2,heldout,files/aud_121.wav
+aud_122,s002,spk_01,Baggage claim terminal 2,quiet,clean,,baggage_reclaim_t2,heldout,files/aud_122.wav
+aud_123,q037,spk_01,when does boarding start,quiet,clean,,flight_information,dev,files/aud_123.wav
+aud_124,s003,spk_01,gate c1,quiet,clean,C1,gates_pier_c,heldout,files/aud_124.wav
+aud_125,q030,spk_01,Where is the train station?,quiet,clean,,rail_station,dev,files/aud_125.wav

@@ -1,0 +1,31 @@
+filename,category,split,quality_stratum,optional_identifier,notes
+photo_aeroplane_4109.jpg,gate,heldout,real_good_light,,"air transportation symbol, screen photo, slight angle"
+photo_arriving_inv_4109.jpg,out_of_scope,heldout,real_good_light,,"airport_adjacent: arriving flights, no vocabulary category"
+photo_arriving_4109.jpg,out_of_scope,heldout,real_good_light,,"airport_adjacent: arriving flights, no vocabulary category"
+photo_baggage_checkin_4109.jpg,check_in,heldout,real_good_light,,AIGA baggage check-in: a suitcase; expected confusion with baggage
+photo_bar_inv_4109.jpg,restaurant,heldout,real_good_light,,
+photo_bar_4109.jpg,restaurant,heldout,real_good_light,,
+photo_barbershop_4109.jpg,out_of_scope,heldout,real_good_light,,generic: barbershop
+photo_currency_4110.jpg,out_of_scope,heldout,real_good_light,,airport_adjacent: currency exchange
+photo_parking_4110.jpg,transport,heldout,real_good_light,,parking
+photo_aeroplane_inv_4110.jpg,gate,heldout,real_good_light,,"air transportation, inverted"
+photo_baggageclaim_4110.jpg,baggage,heldout,real_good_light,,"AIGA baggage claim, inverted"
+photo_lockers_4110.jpg,baggage,heldout,real_good_light,,baggage lockers
+photo_carrental_4111.jpg,transport,heldout,real_good_light,,car rental
+photo_cashier_4111.jpg,out_of_scope,heldout,real_good_light,,generic: cashier
+photo_coatcheck_4111.jpg,out_of_scope,heldout,real_good_light,,generic: coat check
+photo_coffee_4111.jpg,restaurant,heldout,real_good_light,,coffee shop
+photo_customs_4111.jpg,out_of_scope,heldout,real_good_light,,"airport_adjacent: customs, nearest category would be security"
+photo_departing_inv_4111.jpg,gate,heldout,real_good_light,,"departing flights, inverted"
+photo_departing_4111.jpg,gate,heldout,real_good_light,,departing flights
+photo_escalator_4112.jpg,out_of_scope,heldout,real_degraded,,"generic: escalator, defocused"
+photo_extinguisher_4113.jpg,out_of_scope,heldout,real_degraded,,"generic: fire extinguisher, defocused"
+photo_heliport_4114.jpg,out_of_scope,heldout,real_degraded,,"airport_adjacent: heliport, defocused"
+photo_information_4114.jpg,information,heldout,real_degraded,,"question mark cut at the left edge, defocused"
+photo_litter_4114.jpg,out_of_scope,heldout,real_degraded,,"generic: litter disposal, defocused"
+photo_lostfound_4115.jpg,out_of_scope,heldout,real_degraded,,"generic: lost and found: KB category without a visual class, defocused"
+photo_nosmoking_4115.jpg,out_of_scope,heldout,real_degraded,,"generic: no smoking, defocused"
+photo_stairs_4116.jpg,out_of_scope,heldout,real_degraded,,"generic: stairs, angled, defocused"
+photo_toilets_4116.jpg,restroom,heldout,real_degraded,,"toilets, angled, defocused"
+photo_arrow_4117.jpg,out_of_scope,heldout,real_good_light,,"generic: directional arrow, strong angle"
+photo_arrow_4118.jpg,out_of_scope,heldout,real_good_light,,"generic: directional arrow, strong angle"

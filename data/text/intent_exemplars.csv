@@ -1,0 +1,96 @@
+intent,exemplar,split
+find_gate,which way to the departure gates,dev
+find_gate,I am looking for my boarding gate,dev
+find_gate,can you show me where gate A3 is,dev
+find_gate,where are the B gates,dev
+find_gate,how far is pier C from here,dev
+find_gate,I need to find gate C7 quickly,dev
+find_gate,where is the gate for boarding,dev
+find_check_in,where do I drop my bags and get a boarding pass,dev
+find_check_in,which desks are for check in,dev
+find_check_in,where is the check in hall,dev
+find_check_in,I have to check in where do I go,dev
+find_check_in,where is desk 210,dev
+find_check_in,where can I hand in my luggage before departure,dev
+find_security,where is the security checkpoint,dev
+find_security,where do I go through screening,dev
+find_security,which security lane should I use,dev
+find_security,where is passport and bag screening,dev
+find_security,is the south security checkpoint open,dev
+find_security,where is the security control,dev
+find_baggage_reclaim,where do I collect my luggage,dev
+find_baggage_reclaim,which carousel has bags from my flight,dev
+find_baggage_reclaim,where is the baggage hall,dev
+find_baggage_reclaim,where do the bags come out,dev
+find_baggage_reclaim,where is belt 3,dev
+find_baggage_reclaim,where do I get my checked bag,dev
+report_lost_item,I lost my jacket somewhere in the airport,dev
+report_lost_item,where can I report a missing item,dev
+report_lost_item,my luggage did not arrive who do I talk to,dev
+report_lost_item,I forgot something on the aircraft,dev
+report_lost_item,where is the lost property office,dev
+report_lost_item,someone found my wallet where can I collect it,dev
+report_lost_item,I left my phone at the gate,dev
+find_information,where is the information desk,dev
+find_information,who can I ask for help,dev
+find_information,is there a help point in arrivals,dev
+find_information,where can I find airport staff to ask a question,dev
+find_information,where is customer service,dev
+find_information,I need some help finding my way,dev
+find_lounge,where is the airport lounge,dev
+find_lounge,is there a lounge airside,dev
+find_lounge,can I pay to use a lounge here,dev
+find_lounge,where can I relax before boarding,dev
+find_lounge,where is the Aurora lounge,dev
+find_lounge,do you have a business lounge,dev
+find_restaurant,where can I get some food,dev
+find_restaurant,is there a cafe near the gates,dev
+find_restaurant,where can I buy a coffee,dev
+find_restaurant,I am hungry where is a restaurant,dev
+find_restaurant,where is the Skyline restaurant,dev
+find_restaurant,any place to eat in terminal 2,dev
+find_restroom,where are the toilets,dev
+find_restroom,is there a bathroom nearby,dev
+find_restroom,where is the closest WC,dev
+find_restroom,where is an accessible toilet,dev
+find_restroom,are there toilets after security,dev
+find_restroom,I need the restroom,dev
+find_transport,how do I get to the train from here,dev
+find_transport,where do the buses to the city leave,dev
+find_transport,where can I get a taxi,dev
+find_transport,where is the car park,dev
+find_transport,how do I get to the other terminal,dev
+find_transport,where is the shuttle stop,dev
+find_transport,how do I get into town,dev
+request_accessibility_help,I need help with a wheelchair,dev
+request_accessibility_help,where can I get assistance for reduced mobility,dev
+request_accessibility_help,I cannot walk far can someone help me,dev
+request_accessibility_help,where is the special assistance point,dev
+request_accessibility_help,my mother needs a wheelchair,dev
+request_accessibility_help,where can I get medical help,dev
+request_accessibility_help,is there a first aid room,dev
+ask_opening_hours,when does the lost property office open,dev
+ask_opening_hours,what are the opening times of the cafe,dev
+ask_opening_hours,until what time is the information desk staffed,dev
+ask_opening_hours,is the restaurant open in the evening,dev
+ask_opening_hours,what time does check in open,dev
+ask_opening_hours,how late is the lounge open,dev
+ask_directions,how do I walk to the rail station,dev
+ask_directions,which way to baggage reclaim,dev
+ask_directions,how do I get from arrivals to departures,dev
+ask_directions,how do I get to pier B from security,dev
+ask_directions,how do I get back to the car park,dev
+ask_directions,which floor is the lounge on,dev
+ask_flight_status,is my flight on time,dev
+ask_flight_status,has the gate for flight NH 45 changed,dev
+ask_flight_status,when does boarding begin,dev
+ask_flight_status,is flight XY 12 delayed,dev
+ask_flight_status,what time does my plane leave,dev
+ask_flight_status,has my flight been cancelled,dev
+ask_flight_status,which gate is my flight departing from,dev
+identify_sign,what is this symbol,dev
+identify_sign,what does this pictogram mean,dev
+identify_sign,can you tell me what this sign says,dev
+identify_sign,what is this place,dev
+identify_sign,I do not understand this sign,dev
+identify_sign,what does the icon on this sign mean,dev

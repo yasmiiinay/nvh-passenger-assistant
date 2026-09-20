@@ -1,0 +1,5 @@
+audio_id,query_id,speaker_id,reference_transcript,environment,noise_condition,expected_identifiers,target_kb_id,split,file,derived_from,derivation
+aud_126,q001,tts_samantha,Where is gate B12?,quiet,clean,B12,gates_pier_b,dev,files/aud_126.wav,aud_025,"gain reduced to -52 dBFS, below the loudness gate"
+aud_127,q001,tts_samantha,Where is gate B12?,quiet,heavy,B12,gates_pier_b,dev,files/aud_127.wav,aud_025,white noise added at 5 dB SNR
+aud_128,h001,tts_samantha,Gate A11 please,quiet,clean,A11,gates_pier_a,heldout,files/aud_128.wav,aud_045,"gain reduced to -52 dBFS, below the loudness gate"
+aud_129,h001,tts_samantha,Gate A11 please,quiet,heavy,A11,gates_pier_a,heldout,files/aud_129.wav,aud_045,white noise added at 5 dB SNR

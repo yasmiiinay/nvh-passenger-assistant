@@ -1,0 +1,7 @@
+# Evaluation / development only — never imported by app code at runtime
+-r requirements.txt
+scikit-learn==1.7.2
+matplotlib==3.10.7
+pytest==8.4.2
+# One-off FAISS/NumPy equivalence check (Architecture Freeze v1.1 §4.4). Dev-only; never imported at runtime.
+faiss-cpu==1.12.0

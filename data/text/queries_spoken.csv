@@ -1,0 +1,4 @@
+query_id,query,intent,entities_json,target_kb_id,query_type,expected_behaviour,split,notes
+s001,Where is belt 9?,find_baggage_reclaim,"{""belt_id"": ""BELT 9""}",baggage_reclaim_t2,precise,answer,heldout,spoken by spk_01 at recording time; belt not in the seed set
+s002,Baggage claim terminal 2,find_baggage_reclaim,"{""terminal"": ""Terminal 2""}",baggage_reclaim_t2,precise,answer,heldout,spoken by spk_01; terminal 2 variant of q011
+s003,gate c1,find_gate,"{""gate_id"": ""C1""}",gates_pier_c,precise,answer,heldout,spoken by spk_01; short identifier utterance

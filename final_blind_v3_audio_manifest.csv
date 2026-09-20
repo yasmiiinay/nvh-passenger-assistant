@@ -1,0 +1,7 @@
+audio_id,spoken_text,expected_decision,expected_category,expected_record_id,audio_condition,recording_source,reason
+AUD3_B01,Where is the lost property office?,answer,lost_property,lost_property_t1,clean,TTS,"lost_property_t1 is the single lost property office and serves both terminals, so no terminal is needed."
+AUD3_B02,"Sorry, quick one, where can I get a coffee around here?",clarify,restaurant,,fast_natural,human,"cafe_harbour, cafe_pier_c and restaurant_skyline all serve coffee and the utterance gives no terminal or side of security."
+AUD3_B03,How do I get to gate B twelve?,answer,gate,gates_pier_b,identifier,TTS,"B12 lies in the B1-B18 range of gates_pier_b, the only record for Pier B."
+AUD3_B04,Where do I catch the bus into the city?,answer,transport,bus_terminal,mild_noise,human,"bus_terminal is the only record for local and regional buses, on the forecourt outside Terminal 1 arrivals."
+AUD3_B05,"I am in Terminal two, where is the information desk?",answer,information,info_desk_t2,terminal_specific,TTS,The stated terminal selects info_desk_t2 from the three information desk records.
+AUD3_B06,Where is the nearest toilet?,clarify,restroom,,clean,TTS,Three restroom records match and the word nearest gives no location the KB can use.

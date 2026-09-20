@@ -1,0 +1,65 @@
+filename,category,split,quality_stratum,optional_identifier,notes
+aiga_departingflights.png,gate,dev,clean,,
+20_airtransportation.png,gate,heldout,clean,,
+aiga_ticketpurchase.png,check_in,dev,clean,,
+aiga_ticketpurchase_inv_svg_biglietteria_a_sportello.png,check_in,dev,clean,,inverted variant of ticket purchase
+aiga_baggage_check_in.png,check_in,heldout,clean,,AIGA baggage check-in: a suitcase; expected confusion with baggage
+aiga_baggagelockers.png,baggage,dev,clean,,baggage lockers; baggage services
+aiga_information.png,information,dev,clean,,
+aiga_waitingroom.png,lounge,dev,clean,,waiting room stands in for lounge
+aiga_restaurant.png,restaurant,dev,clean,,
+aiga_restaurant_2.png,restaurant,dev,clean,,
+aiga_bar.png,restaurant,dev,clean,,
+aiga_bar_reduced.png,restaurant,dev,clean,,
+aiga_coffeeshop.png,restaurant,heldout,clean,,
+aiga_toiletsq_men.png,restroom,dev,clean,,
+toilets_unisex.png,restroom,heldout,clean,,
+aiga_firstaid.png,medical,dev,clean,,
+aiga_firstaid_red.png,medical,dev,clean,,red variant
+aiga_bus.png,transport,dev,clean,,
+aiga_bus_trans.png,transport,dev,clean,,
+aiga_railtransportation.png,transport,dev,clean,,
+aiga_railtransportation_25.png,transport,dev,clean,,
+aiga_railtransportation_25_white.png,transport,dev,clean,,
+aiga_parking.png,transport,dev,clean,,
+aiga_taxi.png,transport,heldout,clean,,
+aiga_carrental.png,transport,heldout,clean,,
+aiga_groundtransportation.png,transport,heldout,clean,,
+aiga_barbershop.png,out_of_scope,dev,clean,,generic: barbershop
+aiga_barbershop_beautysalon.png,out_of_scope,dev,clean,,generic: barbershop beautysalon
+aiga_beautysalon.png,out_of_scope,dev,clean,,generic: beautysalon
+aiga_cashier.png,out_of_scope,dev,clean,,generic: cashier
+aiga_coatcheck.png,out_of_scope,dev,clean,,generic: coatcheck
+aiga_drinkingfountain.png,out_of_scope,dev,clean,,generic: drinkingfountain
+aiga_elevator.png,out_of_scope,dev,clean,,generic: elevator
+aiga_escalator.png,out_of_scope,dev,clean,,generic: escalator
+aiga_escalator_up.png,out_of_scope,dev,clean,,generic: escalator up
+aiga_escalator_down.png,out_of_scope,dev,clean,,generic: escalator down
+aiga_exit.png,out_of_scope,dev,clean,,generic: exit
+aiga_exit_green.png,out_of_scope,dev,clean,,generic: exit green
+aiga_fire_extinguisher.png,out_of_scope,dev,clean,,generic: fire extinguisher
+aiga_litterdisposal.png,out_of_scope,dev,clean,,generic: litterdisposal
+aiga_mail.png,out_of_scope,heldout,clean,,generic: mail
+aiga_no_entry_red.png,out_of_scope,heldout,clean,,generic: no entry red
+aiga_noentry.png,out_of_scope,heldout,clean,,generic: noentry
+aiga_nosmoking.png,out_of_scope,heldout,clean,,generic: nosmoking
+aiga_no_smoking_red.png,out_of_scope,heldout,clean,,generic: no smoking red
+smoking_aiga_symbol.png,out_of_scope,heldout,clean,,generic: smoking symbol
+aiga_nodogs.png,out_of_scope,heldout,clean,,generic: nodogs
+aiga_noparking.png,out_of_scope,heldout,clean,,generic: noparking
+aiga_nursery.png,out_of_scope,heldout,clean,,generic: nursery
+aiga_shops.png,out_of_scope,heldout,clean,,generic: shops
+aiga_stairs.png,out_of_scope,heldout,clean,,generic: stairs
+aiga_stairs_down.png,out_of_scope,heldout,clean,,generic: stairs down
+aiga_telephone.png,out_of_scope,heldout,clean,,generic: telephone
+aiga_uparrow.png,out_of_scope,heldout,clean,,generic: uparrow
+aiga_rightarrow.png,out_of_scope,heldout,clean,,generic: rightarrow
+aiga_leftanddownarrow.png,out_of_scope,heldout,clean,,generic: leftanddownarrow
+aiga_arrivingflights.png,out_of_scope,dev,clean,,"airport_adjacent: arriving flights, no vocabulary category"
+aiga_customs.png,out_of_scope,dev,clean,,"airport_adjacent: customs, nearest category would be security"
+aiga_hotelinformation.png,out_of_scope,dev,clean,,airport_adjacent: hotel information
+aiga_watertransportation.png,out_of_scope,dev,clean,,"airport_adjacent: water transportation, not in the KB"
+aiga_immigration.png,out_of_scope,heldout,clean,,"airport_adjacent: immigration, nearest category would be security"
+aiga_heliport.png,out_of_scope,heldout,clean,,airport_adjacent: heliport
+aiga_currencyexchange.png,out_of_scope,heldout,clean,,airport_adjacent: currency exchange
+aiga_lostandfound.png,out_of_scope,heldout,clean,,airport_adjacent: lost and found: KB category without a visual class

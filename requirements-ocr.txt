@@ -1,0 +1,4 @@
+# Optional enhancement only (Architecture Freeze v1.1 §4.5).
+# Install solely when configs.settings.enable_ocr is True. Never part of the MVP build.
+-r requirements.txt
+easyocr==1.7.2
