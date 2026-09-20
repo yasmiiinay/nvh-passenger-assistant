@@ -104,8 +104,7 @@ SCOPE_NOTE = ("Text, photo and voice can be combined in one request. Nordhaven A
               "all information is synthetic.")
 HISTORY_NOTE = ("Earlier messages are shown for reference. A short follow-up may use the immediately "
                 "preceding clarification; otherwise requests are processed independently.")
-EXAMPLES = ["Where is gate B12?", "Where can I collect my baggage?", "How do I get to Terminal 2?",
-            "What does this sign mean?"]
+EXAMPLES = ["Where is gate B12?", "Where can I collect my baggage?", "What does this sign mean?"]
 QUICK_REPLY_SLOTS = 3
 
 # every status carries a symbol and words, so colour is never the only signal
@@ -457,11 +456,10 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 
 /* empty state */
 #examples { padding: 20px var(--gutter) 0; }
-#examples-label { margin: 0 0 8px; }
-#examples .row { justify-content: flex-start; gap: 8px; }
+#examples .row { justify-content: flex-start; gap: 8px; margin: 0 12px; }
 #examples .ex { min-height: 44px; flex: 0 0 auto !important; padding: 0 14px; background: var(--bg);
                 border: 1px solid var(--rule); font-weight: 400; font-size: 15px; }
-#examples-hint { font-size: 14px; color: var(--muted); margin-top: 4px; }
+#examples-hint { font-size: 14px; color: var(--muted); margin-top: 0; }
 
 /* session history */
 #history-bar { padding: 14px var(--gutter) 0; align-items: flex-end; justify-content: space-between; gap: 12px; }
@@ -474,7 +472,7 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 /* conversation */
 #conversation-wrap { padding: 0 !important; }
 #conversation { padding: 8px var(--gutter) 4px; display: flex; flex-direction: column; gap: 22px; }
-.role, .subrole, #examples-label { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.role, .subrole { font-weight: 800; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .turn { display: flex; flex-direction: column; gap: 8px; }
 .turn--user { align-items: flex-end; text-align: left; }
 .turn--user .bubble { background: var(--surface); padding: 12px 16px; max-width: min(60ch, 85%);
@@ -532,6 +530,8 @@ body, .gradio-container, .gradio-container * { font-family: "Archivo", system-ui
 
 /* composer: one row (question · photo · voice · send); what is attached shows underneath */
 #composer { border-top: 2px solid var(--rule); background: var(--surface); padding: 14px var(--gutter-block) 14px; margin-top: 24px; gap: 8px; }
+/* before the first message the prompt block sits directly above the composer; a smaller gap avoids an empty band */
+#app:has(#conversation.empty) #composer { margin-top: 8px; }
 #composer .block { padding: 0 !important; }
 #composer-row { gap: 10px; align-items: stretch; flex-wrap: nowrap; }
 #question textarea, #transcript textarea { min-height: 48px; font-size: 16px; background: var(--bg);
@@ -601,7 +601,6 @@ def build_ui() -> gr.Blocks:
                 assist_toggle = gr.Button("Request assistance", elem_id="assist-toggle", scale=0, min_width=200)
 
             with gr.Column(elem_id="examples") as examples:
-                gr.HTML('<div id="examples-label">Try asking</div>')
                 with gr.Row():
                     example_buttons = [gr.Button(q, elem_classes=["ex"]) for q in EXAMPLES]
                 gr.HTML('<div id="examples-hint">You can also send a photo of a sign, or record your question. '
